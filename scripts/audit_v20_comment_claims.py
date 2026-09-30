@@ -47,7 +47,7 @@ def regression_diagnostics(strategy: pd.Series, market: pd.Series) -> dict[str, 
         cov_type="HAC", cov_kwds={"maxlags": 10}
     )
     return {
-        "sessions": int(len(aligned)),
+        "sessions": len(aligned),
         "annualized_alpha": float(fit.params["const"] * SESSIONS_PER_YEAR),
         "alpha_tstat_hac": float(fit.tvalues["const"]),
         "market_beta": float(fit.params["market"]),
