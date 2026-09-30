@@ -58,6 +58,8 @@ def run_risk_budget_backtest(
     sleeve_caps: pd.Series,
     *,
     risk_scaler: pd.Series | None = None,
+    long_gross_scaler: pd.Series | None = None,
+    short_gross_scaler: pd.Series | None = None,
     name_scaler: pd.DataFrame | None = None,
     config: RiskBudgetConfig | None = None,
     costs: PortfolioCosts | None = None,
@@ -79,6 +81,24 @@ def run_risk_budget_backtest(
         raise ValueError("risk scaler must be finite and align to sessions")
     if not np.isfinite(risk_scaler).all() or risk_scaler.le(0).any() or risk_scaler.gt(1).any():
         raise ValueError("risk scaler must be in (0, 1]")
+    side_scalers = {
+        "long gross scaler": long_gross_scaler,
+        "short gross scaler": short_gross_scaler,
+    }
+    for label, side_scaler in side_scalers.items():
+        if side_scaler is None:
+            side_scalers[label] = pd.Series(1.0, index=returns.index)
+            continue
+        if not side_scaler.index.equals(returns.index) or side_scaler.isna().any():
+            raise ValueError(f"{label} must be finite and align to sessions")
+        if (
+            not np.isfinite(side_scaler).all()
+            or side_scaler.lt(0).any()
+            or side_scaler.gt(1).any()
+        ):
+            raise ValueError(f"{label} must be in [0, 1]")
+    long_gross_scaler = side_scalers["long gross scaler"]
+    short_gross_scaler = side_scalers["short gross scaler"]
     if name_scaler is None:
         name_scaler = pd.DataFrame(1.0, index=returns.index, columns=columns)
     if not name_scaler.index.equals(returns.index) or not name_scaler.columns.equals(columns):
@@ -117,6 +137,18 @@ def run_risk_budget_backtest(
         pending_cost = pending_turnover = 0.0
         if offset % config.rebalance_every == 0 and offset >= config.covariance_window:
             scale = float(risk_scaler.loc[session])
+            long_scale = float(long_gross_scaler.loc[session])
+            short_scale = float(short_gross_scaler.loc[session])
+            scaled_long_cap = (
+                config.max_long_gross * scale * long_scale
+                if config.max_long_gross is not None
+                else None
+            )
+            scaled_short_cap = (
+                config.max_short_gross * scale * short_scale
+                if config.max_short_gross is not None
+                else None
+            )
             usable = eligibility.loc[session] & expected_return.loc[session].notna() & adv.loc[session].gt(0)
             names = columns[usable]
             if len(names) < 8:
@@ -196,14 +228,14 @@ def run_risk_budget_backtest(
                     np.maximum(previous, 0).sum() + fixed_long_gross
                 )
                 required_reduction.append(
-                    max(0.0, current_long_gross - config.max_long_gross * scale)
+                    max(0.0, current_long_gross - float(scaled_long_cap))
                 )
             if config.max_short_gross is not None:
                 current_short_gross = float(
                     np.abs(np.minimum(previous, 0)).sum() + fixed_short_gross
                 )
                 required_reduction.append(
-                    max(0.0, current_short_gross - config.max_short_gross * scale)
+                    max(0.0, current_short_gross - float(scaled_short_cap))
                 )
             for factor in factors.columns:
                 vector = factors[factor].to_numpy(dtype=float)
@@ -231,14 +263,14 @@ def run_risk_budget_backtest(
                     np.maximum(cap_target, 0).sum() + fixed_long_gross
                 )
                 post_cap_corrections.append(
-                    max(0.0, post_cap_long - config.max_long_gross * scale)
+                    max(0.0, post_cap_long - float(scaled_long_cap))
                 )
             if config.max_short_gross is not None:
                 post_cap_short = float(
                     np.abs(np.minimum(cap_target, 0)).sum() + fixed_short_gross
                 )
                 post_cap_corrections.append(
-                    max(0.0, post_cap_short - config.max_short_gross * scale)
+                    max(0.0, post_cap_short - float(scaled_short_cap))
                 )
             for factor in factors.columns:
                 vector = factors[factor].to_numpy(dtype=float)
@@ -264,14 +296,14 @@ def run_risk_budget_backtest(
             add(np.r_[-np.ones(n), np.zeros(2 * n)], config.net_cap * scale + fixed_net)
             if config.max_long_gross is not None:
                 # For exact auxiliaries u=|w|, (u+w)/2 equals the long gross.
-                remaining_long = config.max_long_gross * scale - fixed_long_gross
+                remaining_long = float(scaled_long_cap) - fixed_long_gross
                 add(
                     np.r_[0.5 * np.ones(n), 0.5 * np.ones(n), np.zeros(n)],
                     remaining_long,
                 )
             if config.max_short_gross is not None:
                 # For exact auxiliaries u=|w|, (u-w)/2 equals the short gross.
-                remaining_short = config.max_short_gross * scale - fixed_short_gross
+                remaining_short = float(scaled_short_cap) - fixed_short_gross
                 add(
                     np.r_[-0.5 * np.ones(n), 0.5 * np.ones(n), np.zeros(n)],
                     remaining_short,
@@ -308,7 +340,7 @@ def run_risk_budget_backtest(
             initial_weight = np.clip(previous, lower_name, upper_name)
             if config.max_long_gross is not None:
                 remaining_long = max(
-                    0.0, config.max_long_gross * scale - fixed_long_gross
+                    0.0, float(scaled_long_cap) - fixed_long_gross
                 )
                 initial_long = float(np.maximum(initial_weight, 0).sum())
                 if initial_long > remaining_long and initial_long > 0:
@@ -316,7 +348,7 @@ def run_risk_budget_backtest(
                     initial_weight[positive] *= remaining_long / initial_long
             if config.max_short_gross is not None:
                 remaining_short = max(
-                    0.0, config.max_short_gross * scale - fixed_short_gross
+                    0.0, float(scaled_short_cap) - fixed_short_gross
                 )
                 initial_short = float(np.abs(np.minimum(initial_weight, 0)).sum())
                 if initial_short > remaining_short and initial_short > 0:
@@ -431,20 +463,22 @@ def run_risk_budget_backtest(
                 np.maximum(np.abs(target.loc[names].to_numpy()) - scaled_name, 0).max()
             )
             short_budget_ratio = (
-                short_gross / (config.max_short_gross * scale)
-                if config.max_short_gross not in (None, 0)
+                short_gross / float(scaled_short_cap)
+                if scaled_short_cap not in (None, 0)
                 else (0.0 if short_gross == 0 else np.nan)
             )
             long_budget_ratio = (
-                long_gross / (config.max_long_gross * scale)
-                if config.max_long_gross not in (None, 0)
+                long_gross / float(scaled_long_cap)
+                if scaled_long_cap not in (None, 0)
                 else (0.0 if long_gross == 0 else np.nan)
             )
             rebalances.append({"session": session, "eligible_assets": len(names),
                                "gross": float(target.abs().sum()), "net": float(target.sum()),
                                "long_gross": long_gross,
+                               "long_gross_cap": scaled_long_cap,
                                "long_gross_budget_ratio": long_budget_ratio,
                                "short_gross": short_gross,
+                               "short_gross_cap": scaled_short_cap,
                                "short_gross_budget_ratio": short_budget_ratio,
                                "maximum_name_cap_excess": name_cap_excess,
                                "turnover": pending_turnover,
@@ -455,6 +489,8 @@ def run_risk_budget_backtest(
                                "optimizer_converged": bool(result.success),
                                "optimizer_status": int(result.status),
                                "risk_scaler": scale,
+                               "long_gross_scaler": long_scale,
+                               "short_gross_scaler": short_scale,
                                "net_budget_ratio": float(abs(target.sum()) / (config.net_cap * scale)),
                                "maximum_factor_budget_ratio": float(
                                    (factor_exposure.abs() / (factor_caps * scale)).max()
