@@ -88,3 +88,60 @@ def test_temporarily_ineligible_holding_is_carried_without_zero_adv_liquidation(
     )
     assert result.status == "COMPLETED"
     assert result.daily.transaction_cost.notna().all()
+
+
+def test_name_scaler_can_force_selected_assets_to_cash():
+    rng = np.random.default_rng(44)
+    index = pd.bdate_range("2018-01-02", periods=150)
+    columns = [f"A{i}" for i in range(12)]
+    returns = pd.DataFrame(rng.normal(0, .004, (150, 12)), index=index, columns=columns)
+    alpha = pd.DataFrame(.002, index=index, columns=columns)
+    adv = pd.DataFrame(100_000_000.0, index=index, columns=columns)
+    eligibility = pd.DataFrame(True, index=index, columns=columns)
+    factors = pd.DataFrame({"factor": [1, -1] * 6}, index=columns)
+    sleeves = pd.Series(["all"] * 12, index=columns)
+    name_scaler = pd.DataFrame(1.0, index=index, columns=columns)
+    name_scaler.loc[:, "A0"] = 0.0
+    result = run_risk_budget_backtest(
+        alpha, returns, adv, eligibility, factors, pd.Series({"factor": 1.0}),
+        sleeves, pd.Series({"all": 1.0}), name_scaler=name_scaler,
+        config=RiskBudgetConfig(covariance_window=60, net_cap=1.0),
+    )
+    assert result.status == "COMPLETED"
+    assert result.weights["A0"].abs().max() == 0
+
+
+def test_optimizer_enforces_short_gross_cap():
+    rng = np.random.default_rng(45)
+    index = pd.bdate_range("2018-01-02", periods=150)
+    columns = [f"A{i}" for i in range(12)]
+    returns = pd.DataFrame(rng.normal(0, .004, (150, 12)), index=index, columns=columns)
+    alpha = pd.DataFrame(-.004, index=index, columns=columns)
+    adv = pd.DataFrame(100_000_000.0, index=index, columns=columns)
+    eligibility = pd.DataFrame(True, index=index, columns=columns)
+    factors = pd.DataFrame({"factor": [1, -1] * 6}, index=columns)
+    sleeves = pd.Series(["all"] * 12, index=columns)
+    result = run_risk_budget_backtest(
+        alpha, returns, adv, eligibility, factors, pd.Series({"factor": 1.0}),
+        sleeves, pd.Series({"all": 1.0}),
+        config=RiskBudgetConfig(
+            covariance_window=60, net_cap=1.0, max_short_gross=.20,
+        ),
+    )
+    assert result.status == "COMPLETED"
+    assert result.rebalances["short_gross"].max() <= .2001
+    assert result.rebalances["short_gross_budget_ratio"].max() <= 1.0001
+
+
+def test_name_scaler_validation_rejects_noncausal_ranges():
+    index = pd.bdate_range("2018-01-02", periods=20)
+    columns = [f"A{i}" for i in range(8)]
+    frame = pd.DataFrame(0.0, index=index, columns=columns)
+    invalid = pd.DataFrame(1.1, index=index, columns=columns)
+    with np.testing.assert_raises_regex(ValueError, "name scaler must be in"):
+        run_risk_budget_backtest(
+            frame, frame, frame + 1, frame.eq(0),
+            pd.DataFrame({"factor": 0.0}, index=columns), pd.Series({"factor": 1.0}),
+            pd.Series("all", index=columns), pd.Series({"all": 1.0}),
+            name_scaler=invalid,
+        )
