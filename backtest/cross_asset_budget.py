@@ -205,6 +205,37 @@ def run_risk_budget_backtest(
                     max(0.0, np.abs(previous[mask]).sum()
                         + float(fixed_sleeve_gross.get(sleeve, 0)) - float(cap) * scale)
                 )
+            # Per-name cap cuts can themselves create a new net/factor/sleeve breach. The
+            # ordinary turnover cap must then be relaxed by both the forced trades and the
+            # smallest additional correction, otherwise individually feasible constraints
+            # become jointly infeasible (for example when cash fallback closes several shorts).
+            cap_target = np.clip(previous, lower_name, upper_name)
+            forced_turnover = float(np.abs(cap_target - previous).sum())
+            post_cap_corrections = [
+                max(0.0, np.abs(cap_target).sum() + fixed_gross - scaled_gross),
+                max(0.0, abs(cap_target.sum() + fixed_net) - config.net_cap * scale),
+            ]
+            if config.max_short_gross is not None:
+                post_cap_short = float(
+                    np.abs(np.minimum(cap_target, 0)).sum() + fixed_short_gross
+                )
+                post_cap_corrections.append(
+                    max(0.0, post_cap_short - config.max_short_gross * scale)
+                )
+            for factor in factors.columns:
+                vector = factors[factor].to_numpy(dtype=float)
+                exposure = vector @ cap_target + float(fixed_factor_exposure[factor])
+                excess = max(0.0, abs(exposure) - float(factor_caps[factor]) * scale)
+                post_cap_corrections.append(
+                    excess / max(float(np.abs(vector).max()), 1e-12)
+                )
+            for sleeve, cap in sleeve_caps.items():
+                mask = sleeves.eq(sleeve).to_numpy()
+                post_cap_corrections.append(
+                    max(0.0, np.abs(cap_target[mask]).sum()
+                        + float(fixed_sleeve_gross.get(sleeve, 0)) - float(cap) * scale)
+                )
+            required_reduction.append(forced_turnover + max(post_cap_corrections))
             # A risk-cap cut overrides the ordinary turnover cap only by the minimum
             # amount needed to restore feasibility; the resulting trades are still costed.
             turnover_limit = max(config.max_turnover, max(required_reduction) + config.tolerance)
