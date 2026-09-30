@@ -240,6 +240,7 @@ def run_risk_budget_backtest(
             # amount needed to restore feasibility; the resulting trades are still costed.
             turnover_limit = max(config.max_turnover, max(required_reduction) + config.tolerance)
             add(np.r_[np.zeros(n), np.ones(n), np.zeros(n)], available_gross)
+            turnover_row = len(rows)
             add(np.r_[np.zeros(2 * n), np.ones(n)], turnover_limit)
             add(np.r_[np.ones(n), np.zeros(2 * n)], config.net_cap * scale - fixed_net)
             add(np.r_[-np.ones(n), np.zeros(2 * n)], config.net_cap * scale + fixed_net)
@@ -346,6 +347,35 @@ def run_risk_budget_backtest(
                         # invalid strategy path, and the rebalance records non-convergence.
                         result = cash_seed
                         independently_feasible = True
+            if not result.success and not independently_feasible:
+                # A numerical failure on an otherwise ordinary rebalance can make the
+                # configured turnover cap the only constraint preventing the deterministic
+                # cash fallback. In that exceptional case, permit a fully costed liquidation
+                # while retaining the name, gross, net, factor, sleeve, capacity and
+                # volatility constraints. This is fail-closed: it cannot create exposure.
+                emergency_upper = linear_upper.copy()
+                emergency_turnover = max(turnover_limit, float(np.abs(previous).sum()))
+                emergency_upper[turnover_row] = emergency_turnover
+                emergency_linear = LinearConstraint(
+                    linear_matrix, -np.inf, emergency_upper
+                )
+                emergency_cash = OptimizeResult(
+                    x=np.r_[np.zeros(2 * n), np.abs(previous)],
+                    success=False,
+                    status=-3,
+                    message="independently verified emergency cash liquidation",
+                )
+                if _is_feasible_candidate(
+                    emergency_cash,
+                    bounds,
+                    emergency_linear,
+                    volatility_constraint,
+                    config.tolerance,
+                ):
+                    result = emergency_cash
+                    linear = emergency_linear
+                    turnover_limit = emergency_turnover
+                    independently_feasible = True
             if not result.success and not independently_feasible:
                 return CrossAssetResult(pd.DataFrame(records).set_index("session"), pd.DataFrame(weights),
                                         pd.DataFrame(rebalances), "INVALID",
