@@ -1,6 +1,23 @@
 # Defensive TSMOM Research and Execution Audit
 
-## Current research status: v21 rejected
+## Current research status: v22 rejected at train-only admission
+
+The next prespecified study added a 70/30 blend of trend and ETF cash-distribution carry. The carry
+family used trailing dividends and capital-gains distributions, not price-derived pseudo-carry.
+Its train-only calibration slope was **-1.75e-7**, so the protocol rejected the family without
+reversing it and without evaluating a portfolio on reused development data.
+
+The ETF archive contained 3,263 positive distribution events, but coverage was uneven: the metals
+sleeve had only two assets and only three of eight commodity ETFs recorded distributions. This
+proxy cannot identify futures curve, basis or roll carry. v23 therefore requires contract-level
+data before a futures-native result can be claimed.
+
+- [Frozen v22 protocol](docs/MULTI_ASSET_PROTOCOL_V22.md)
+- [v22 report](reports/cross_asset_v22/REPORT.md)
+- [v22 train calibration](reports/cross_asset_v22/train_calibration.csv)
+- [v22 data-quality audit](reports/cross_asset_v22/distribution_quality_by_sleeve.csv)
+
+## v21 structural repair: rejected
 
 The prespecified v21 study tested eight structural repairs after the locked v20 failure:
 asymmetric short entry, a causal fast risk-off overlay, bounded inverse-volatility sizing, explicit

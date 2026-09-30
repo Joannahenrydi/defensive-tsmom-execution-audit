@@ -228,19 +228,40 @@ def main(source: Path, output: Path) -> None:
         [{"family": name, **artifact} for name, artifact in calibrations.items()]
     ).to_csv(output / "train_calibration.csv", index=False)
     if any(artifact["status"] != "ADMITTED" for artifact in calibrations.values()):
+        quality = {
+            "positive_distribution_events": int(
+                sleeve_quality["positive_distribution_events"].sum()
+            ),
+            "rejected_events": int(sleeve_quality["rejected_events"].sum()),
+            "sleeves_without_three_distribution_assets": sleeve_quality.loc[
+                sleeve_quality["assets_with_distributions"].lt(3), "sleeve"
+            ].tolist(),
+        }
         summary = {
             "status": "V22_REJECTED",
             "reason": "NONPOSITIVE_TRAIN_FAMILY_CALIBRATION",
             "calibration": calibrations,
+            "data_quality": quality,
             "historical_gate_passed": False,
             "prospective_validation_required": True,
             "orders_allowed": False,
         }
         (output / "SUMMARY.json").write_text(json.dumps(summary, indent=2) + "\n")
         (output / "REPORT.md").write_text(
-            "# v22 ETF Trend + Distribution-Carry\n\n**V22_REJECTED**\n\n"
-            "At least one prespecified family had a nonpositive train-only calibration slope. "
-            "The signal was not reversed and no portfolio was evaluated.\n"
+            "# v22 ETF Trend + Distribution-Carry\n\n"
+            "## Decision\n\n**V22_REJECTED**\n\n"
+            "The distribution-carry family failed the prespecified train-only admission gate. "
+            f"Its slope was **{calibrations['carry']['slope']:.8f}**, so the signal was not "
+            "reversed and no portfolio or reused-development result was evaluated.\n\n"
+            "## Data-quality finding\n\n"
+            f"The archive contained {quality['positive_distribution_events']:,} positive cash "
+            f"distribution events and {quality['rejected_events']} event above the frozen 25% "
+            "quality bound. Metals had only two assets and commodity distributions appeared in "
+            "only three of eight assets. Cash distributions therefore provide uneven cross-asset "
+            "coverage and cannot stand in for contract-level curve and roll carry.\n\n"
+            "## Research disposition\n\n"
+            "v22 is rejected before portfolio evaluation. The next admissible step is the v23 "
+            "futures data gate. Orders remain disabled.\n"
         )
         print(json.dumps(summary, indent=2))
         return

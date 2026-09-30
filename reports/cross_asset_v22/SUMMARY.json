@@ -1,0 +1,34 @@
+{
+  "status": "V22_REJECTED",
+  "reason": "NONPOSITIVE_TRAIN_FAMILY_CALIBRATION",
+  "calibration": {
+    "trend": {
+      "status": "ADMITTED",
+      "reason": "OK",
+      "slope": 5.0705984114425215e-05,
+      "observations": 90637,
+      "pooled_correlation": 0.0028074011125466536,
+      "directional_accuracy": 0.2024007855511546,
+      "digest": "f1c4b69b0f3dd9d1421a8d55f3817c6add65aee2a9890990b92a40285ae04152"
+    },
+    "carry": {
+      "status": "BLOCKED",
+      "reason": "NONPOSITIVE_TRAIN_SLOPE",
+      "slope": -1.751069349270817e-07,
+      "observations": 85780,
+      "pooled_correlation": 0.002730321725403268,
+      "directional_accuracy": 0.3944742364187456,
+      "digest": "9ce404bb3520c8729d494a44816a95d25e593e26b70f43c3e3c665276ea872c9"
+    }
+  },
+  "data_quality": {
+    "positive_distribution_events": 3263,
+    "rejected_events": 1,
+    "sleeves_without_three_distribution_assets": [
+      "metals"
+    ]
+  },
+  "historical_gate_passed": false,
+  "prospective_validation_required": true,
+  "orders_allowed": false
+}
