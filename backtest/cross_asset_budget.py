@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import Bounds, LinearConstraint, minimize
+from scipy.optimize import Bounds, LinearConstraint, OptimizeResult, minimize
 
 from backtest.cross_asset import CrossAssetResult
 from portfolio.optimizer import PortfolioCosts, estimate_costs
@@ -308,7 +308,12 @@ def run_risk_budget_backtest(
             # that point independently satisfies every linear, capacity and volatility bound.
             if not result.success and not independently_feasible:
                 cash_initial = np.r_[np.zeros(2 * n), np.abs(previous)]
-                cash_seed = type("FeasibleSeed", (), {"x": cash_initial})()
+                cash_seed = OptimizeResult(
+                    x=cash_initial,
+                    success=False,
+                    status=-1,
+                    message="independently verified fail-closed cash fallback",
+                )
                 if _is_feasible_candidate(
                     cash_seed, bounds, linear, volatility_constraint, config.tolerance
                 ):
@@ -323,6 +328,12 @@ def run_risk_budget_backtest(
                     independently_feasible = _is_feasible_candidate(
                         result, bounds, linear, volatility_constraint, config.tolerance
                     )
+                    if not result.success and not independently_feasible:
+                        # SLSQP can reject the exact feasible corner on some SciPy builds.
+                        # Holding cash is safer than converting that numerical result into an
+                        # invalid strategy path, and the rebalance records non-convergence.
+                        result = cash_seed
+                        independently_feasible = True
             if not result.success and not independently_feasible:
                 return CrossAssetResult(pd.DataFrame(records).set_index("session"), pd.DataFrame(weights),
                                         pd.DataFrame(rebalances), "INVALID",
