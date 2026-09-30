@@ -1,6 +1,43 @@
 # Defensive TSMOM Research and Execution Audit
 
-## Current research status: v23 blocked at the futures data gate
+## Current research status: v24 dynamic symmetric TSMOM rejected
+
+v24 tested one frozen, mathematically symmetric long/short design: prior-window rolling z-scores,
+a causal 70th-percentile dynamic threshold, standardized moving-average-gap confirmation,
+`tanh(z)` sizing, identical 50% long and short gross caps, a volatility floor and one portfolio
+regime scaler applied equally to both directions. No thresholds or weights were searched after the
+results were read.
+
+| v24 evidence | Train | Reused development 2017–2024 |
+|---|---:|---:|
+| Net Sharpe | **0.266** | **0.178** |
+| Net CAGR | 0.69% | 0.51% |
+| Maximum drawdown | -4.59% | -8.40% |
+| Long net expectancy | +1.12% | +1.19% |
+| Short net expectancy | **-0.39%** | **-0.63%** |
+| Long Sharpe | 0.466 | 0.415 |
+| Short Sharpe | **-0.279** | **-0.307** |
+
+The reused-development long and short books averaged 39.37% and 30.62% gross, top-five absolute
+contribution share fell to 31.16%, and SPY regression R-squared was 17.17%. The signal was therefore
+far less dependent on a concentrated long book, but symmetric construction did not create positive
+multi-year short expectancy. In 2022 alone the short book worked (+2.77% annualized expectancy,
+Sharpe 1.594), while the long book lost -3.16%; the total year remained negative.
+
+The candidate also failed the operational gate because a 0.10% ADV limit prevented immediate
+compliance with every dynamic name-cap cut; the largest disclosed reused-development residual was
+0.81%. The engine executed the maximum feasible reduction and did not assume an impossible fill.
+This result strengthens the case for a futures-native follow-up, but it is not a futures result and
+does not authorize orders.
+
+- [Frozen v24 protocol](docs/MULTI_ASSET_PROTOCOL_V24.md)
+- [v24 report](reports/cross_asset_v24/REPORT.md)
+- [v24 machine-readable decision](reports/cross_asset_v24/SUMMARY.json)
+- [v24 long/short metrics](reports/cross_asset_v24/book_metrics.csv)
+- [v24 yearly attribution](reports/cross_asset_v24/yearly.csv)
+- [v24 evaluator](scripts/evaluate_cross_asset_v24.py)
+
+## v23 futures-native study: blocked at the data gate
 
 The v23 contract-level audit is implemented and fail-closed. The current workspace has no
 expiry-specific futures settlement archive or point-in-time contract metadata, and Alpaca's

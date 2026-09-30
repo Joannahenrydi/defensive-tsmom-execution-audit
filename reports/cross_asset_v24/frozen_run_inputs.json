@@ -1,0 +1,74 @@
+{
+  "protocol_sha256": "3015db654ea88d6cb710a929d80d61da08cae55389b7bbe3e8fb6e97aad50944",
+  "source_sha256": "82347fef112a5f04dc2b5accf947f362eefe1a0a89f1c59bf143a369ab63e32e",
+  "calibration": {
+    "status": "ADMITTED",
+    "reason": "OK",
+    "slope": 5.1513871248276005e-05,
+    "observations": 90637,
+    "pooled_correlation": 0.003326238164351807,
+    "directional_accuracy": 0.1151406158632788,
+    "digest": "fd015ea2c63e5ca7952585fb7c50d88d6ebd9f18fe5bdf7a9fe01410dab348e3"
+  },
+  "momentum_weights": {
+    "63": 0.25,
+    "126": 0.35,
+    "252": 0.4
+  },
+  "skip_sessions": 21,
+  "standardization_window": 252,
+  "standardization_minimum": 126,
+  "threshold_quantile": 0.7,
+  "mapping": "tanh(z) with symmetric sign confirmation",
+  "volatility_floor": 0.08,
+  "risk_scalers": {
+    "normal": 1.0,
+    "high_volatility": 0.7,
+    "stress": 0.4
+  },
+  "portfolio": {
+    "rebalance_every": 10,
+    "max_gross": 1.0,
+    "max_long_gross": 0.5,
+    "max_short_gross": 0.5,
+    "net_cap": 0.2,
+    "max_name": 0.1,
+    "max_turnover": 0.25,
+    "max_participation": 0.001,
+    "annual_volatility_cap": 0.08,
+    "liquidity_limited_cap_reduction": true
+  },
+  "factor_caps": {
+    "equity": 0.5,
+    "duration": 0.5,
+    "credit": 0.3,
+    "commodity": 0.5,
+    "usd": 0.4
+  },
+  "sleeve_caps": {
+    "equity": 0.6,
+    "rates": 0.6,
+    "credit": 0.4,
+    "metals": 0.4,
+    "commodity": 0.6,
+    "usd": 0.3
+  },
+  "costs": {
+    "commission_bps": 0,
+    "half_spread_bps": 1,
+    "slippage_bps": 1,
+    "impact_coefficient": 0.1,
+    "borrow_annual": 0.01,
+    "calendar_days": 7,
+    "multiplier": 1.0
+  },
+  "train_window": [
+    "2008-01-02",
+    "2016-12-30"
+  ],
+  "reused_development_window": [
+    "2017-01-03",
+    "2024-12-31"
+  ],
+  "fresh_holdout_available": false
+}

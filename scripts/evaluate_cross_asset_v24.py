@@ -152,6 +152,7 @@ def run_candidate(
         net_cap=0.20,
         max_long_gross=0.50,
         max_short_gross=0.50,
+        liquidity_limited_cap_reduction=True,
     )
     return run_risk_budget_backtest(
         delayed_score,
@@ -345,7 +346,10 @@ evidence; it is not a fresh holdout.
 - State-dependent-cost Sharpe: **{robustness.get('state_dependent_cost', float('nan')):.3f}**.
 - Reused-development average long/short gross: **{development.get('average_long_exposure', float('nan')):.2%} / {development.get('average_short_exposure', float('nan')):.2%}**.
 - SPY beta / R-squared: **{development.get('spy_beta', float('nan')):.3f} / {development.get('spy_r_squared', float('nan')):.1%}**.
+- Largest reused-development dynamic name-cap excess: **{development.get('maximum_name_cap_excess', float('nan')):.2%}**. The ADV limit prevented immediate liquidation on the affected scaler cuts, so the operational gate failed rather than assuming an impossible fill.
 - Failed gate components: **{', '.join(failed) if failed else 'None'}**.
+
+In the 2022 diagnostic, the short book earned **{summary.get('diagnostic_2022', {}).get('short_net_expectancy', float('nan')):.2%}** annualized with Sharpe **{summary.get('diagnostic_2022', {}).get('short_sharpe', float('nan')):.3f}**, while the long book earned **{summary.get('diagnostic_2022', {}).get('long_net_expectancy', float('nan')):.2%}**. The short hedge worked in that regime but was not large enough to make the portfolio profitable.
 
 ## Interpretation
 
@@ -392,6 +396,7 @@ def main(source: Path, output: Path) -> None:
             "max_turnover": 0.25,
             "max_participation": 0.001,
             "annual_volatility_cap": 0.08,
+            "liquidity_limited_cap_reduction": True,
         },
         "factor_caps": FACTOR_CAPS.to_dict(),
         "sleeve_caps": SLEEVE_CAPS.to_dict(),
@@ -514,7 +519,7 @@ def main(source: Path, output: Path) -> None:
     result.weights.to_csv(output / "weights.csv.gz", compression="gzip")
     result.rebalances.to_csv(output / "rebalances.csv")
     for name, table in tables.items():
-        table.to_csv(output / f"{name}.csv", index=name not in {"book_daily"})
+        table.to_csv(output / f"{name}.csv", index=name == "book_daily")
     robustness.to_csv(output / "robustness.csv", index=False)
     pd.DataFrame(
         {
