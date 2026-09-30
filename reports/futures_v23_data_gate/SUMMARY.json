@@ -1,0 +1,14 @@
+{
+  "status": "V23_BLOCKED_DATA_UNAVAILABLE",
+  "reason": "REQUIRED_CONTRACT_ARCHIVE_NOT_FOUND",
+  "missing_files": [
+    "data/futures/contracts_daily.parquet",
+    "data/futures/contracts_metadata.csv"
+  ],
+  "problems": [],
+  "admitted_roots": [],
+  "admitted_sleeves": [],
+  "protocol_sha256": "4a879a0ae927bde5aeb7d826fefd08befe47c7eea9b805f31c8255445795184b",
+  "strategy_backtest_run": false,
+  "orders_allowed": false
+}

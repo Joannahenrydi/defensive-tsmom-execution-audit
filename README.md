@@ -1,6 +1,22 @@
 # Defensive TSMOM Research and Execution Audit
 
-## Current research status: v22 rejected at train-only admission
+## Current research status: v23 blocked at the futures data gate
+
+The v23 contract-level audit is implemented and fail-closed. The current workspace has no
+expiry-specific futures settlement archive or point-in-time contract metadata, and Alpaca's
+official market-data interfaces do not provide the required futures history. The futures-native
+strategy was therefore **not run**. This is a data-availability block, not an alpha rejection.
+
+Required inputs are `data/futures/contracts_daily.parquet` and
+`data/futures/contracts_metadata.csv`. The audit requires at least 12 roots across three sleeves,
+95% session coverage, and two simultaneously observed expiries on at least 60% of root sessions.
+
+- [Frozen v23 data protocol](docs/MULTI_ASSET_PROTOCOL_V23.md)
+- [v23 data-gate report](reports/futures_v23_data_gate/REPORT.md)
+- [v23 machine-readable status](reports/futures_v23_data_gate/SUMMARY.json)
+- [v23 audit implementation](scripts/audit_futures_v23_data.py)
+
+## v22 ETF carry proxy: rejected at train-only admission
 
 The next prespecified study added a 70/30 blend of trend and ETF cash-distribution carry. The carry
 family used trailing dividends and capital-gains distributions, not price-derived pseudo-carry.
