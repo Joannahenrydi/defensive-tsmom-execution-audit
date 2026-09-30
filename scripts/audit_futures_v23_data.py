@@ -6,7 +6,6 @@ import argparse
 import json
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from scripts.evaluate_equity_v7 import sha256
@@ -93,7 +92,7 @@ def audit_tables(daily: pd.DataFrame, metadata: pd.DataFrame) -> tuple[dict, pd.
 
     expected_sessions = len(pd.bdate_range(START, END))
     root_rows = []
-    for root in ROOT_SLEEVES:
+    for root, sleeve in ROOT_SLEEVES.items():
         subset = daily.loc[daily["root"].eq(root) & daily["date"].between(START, END)]
         observed_sessions = int(subset["date"].nunique())
         by_session = subset.groupby("date")["contract"].nunique()
@@ -101,7 +100,7 @@ def audit_tables(daily: pd.DataFrame, metadata: pd.DataFrame) -> tuple[dict, pd.
         root_rows.append(
             {
                 "root": root,
-                "sleeve": ROOT_SLEEVES[root],
+                "sleeve": sleeve,
                 "first_date": subset["date"].min(),
                 "last_date": subset["date"].max(),
                 "contracts": int(subset["contract"].nunique()),

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +14,7 @@ from backtest.cross_asset import CrossAssetResult
 from backtest.cross_asset_budget import RiskBudgetConfig, run_risk_budget_backtest
 from portfolio.optimizer import PortfolioCosts
 from scripts.audit_v20_comment_claims import regression_diagnostics
-from scripts.cross_asset_v17_universe import UNIVERSE, asset_sleeves, factor_loadings
+from scripts.cross_asset_v17_universe import UNIVERSE, asset_sleeves
 from scripts.evaluate_cross_asset_v12 import TEST, TRAIN, VALIDATION, load_data
 from scripts.evaluate_cross_asset_v13 import segment_metrics
 from scripts.evaluate_cross_asset_v15 import calibrate_absolute
@@ -25,6 +25,8 @@ from scripts.evaluate_cross_asset_v19 import (
     build_defensive_tsmom,
     frozen_trade_cost_stress,
     normalized_loadings,
+)
+from scripts.evaluate_cross_asset_v19 import (
     run_one as run_v19,
 )
 from scripts.evaluate_cross_asset_v20 import (
@@ -364,7 +366,7 @@ def write_report(output: Path, summary: dict, matrix: pd.DataFrame) -> None:
             f"{development.loc[name, 'sharpe']:.3f} | {development.loc[name, 'cagr']:.2%} | "
             f"{development.loc[name, 'max_drawdown']:.2%} | "
             f"{development.loc[name, 'short_annualized_expectancy']:.2%} | "
-            f"{str(bool(train.loc[name, 'qualified']))} |"
+            f"{bool(train.loc[name, 'qualified'])!s} |"
         )
     selected = summary.get("selected_candidate") or "None"
     detail = summary.get("selected_development", {})

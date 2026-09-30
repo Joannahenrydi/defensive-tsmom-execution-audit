@@ -3,8 +3,8 @@ import pandas as pd
 
 from scripts.cross_asset_v17_universe import UNIVERSE, asset_sleeves
 from scripts.evaluate_cross_asset_v22 import (
-    build_distribution_carry,
     blend_expected_returns,
+    build_distribution_carry,
 )
 
 

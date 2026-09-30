@@ -23,10 +23,10 @@ from scripts.evaluate_cross_asset_v20 import (
 )
 from scripts.evaluate_cross_asset_v21 import (
     CANDIDATES,
+    build_candidate_features,
     candidate_diagnostics,
     fixed_regime_table,
     operational_pass,
-    build_candidate_features,
     run_candidate,
     sleeve_table,
     yearly_table,
