@@ -102,6 +102,27 @@ must use a new version and prospective evaluation period. The economically relev
 direction is a futures implementation with explicit roll, margin, carry and short-side execution,
 rather than trying to repair cash-ETF shorts on the consumed holdout.
 
+## Post-holdout structural audit
+
+The comment-driven v20.1 audit resolves the remaining interpretation questions without changing
+the frozen strategy:
+
+| Question | Locked evidence | Conclusion |
+|---|---:|---|
+| Is performance dependent on equity beta? | Total SPY beta 0.172; HAC t-stat 19.70; R² 53.5%; long beta 0.175; short beta -0.003 | **Directional long dependence confirmed** |
+| Is the short book independently profitable? | Net expectancy -0.18%; Sharpe -0.495 | **No** |
+| Does removing borrow repair the short book? | Borrow-free expectancy -0.07% | **No over the full holdout** |
+| Did shorts hedge 2022? | +0.14% before borrow, -0.07% after borrow, versus -9.12% from the long book | **Too small; net defense failed** |
+
+Average locked net exposure was 52.6%. Regression alpha versus SPY was -1.84% annualized. The
+evidence confirms that the observed return was mainly a directional long trend result rather than
+a symmetric CTA result.
+
+The borrow-free test is an ETF counterfactual, not a futures backtest. It shows that borrow explains
+the 2022 sign flip, but not the multi-year short-side failure. A valid futures claim requires
+contract-level roll, carry, basis, collateral, margin and execution data under a separately frozen
+protocol.
+
 ## Evidence
 
 - [Frozen v20 protocol](docs/MULTI_ASSET_PROTOCOL_V20.md)
@@ -114,6 +135,15 @@ rather than trying to repair cash-ETF shorts on the consumed holdout.
 - [Daily book reconciliation](reports/cross_asset_v20/locked_book_daily.csv)
 - [Frozen evaluator](scripts/evaluate_cross_asset_v20.py)
 - [Audit tests](tests/test_cross_asset_v20.py)
+- [Comment issue resolution](reports/cross_asset_v20_comment_audit/COMMENT_ISSUES.md)
+- [Comment audit decision](reports/cross_asset_v20_comment_audit/SUMMARY.json)
+- [Market-beta diagnostics](reports/cross_asset_v20_comment_audit/market_beta_diagnostics.csv)
+- [Short cost waterfall](reports/cross_asset_v20_comment_audit/short_cost_waterfall.csv)
+- [2022 book teardown](reports/cross_asset_v20_comment_audit/locked_yearly_book_teardown.csv)
+- [Regime book diagnostics](reports/cross_asset_v20_comment_audit/regime_book_diagnostics.csv)
+- [Comment audit implementation](scripts/audit_v20_comment_claims.py)
+- [Comment audit tests](tests/test_v20_comment_audit.py)
+- [Futures-native research specification](docs/FUTURES_RESEARCH_SPEC.md)
 
 ## Reproduction safeguards
 

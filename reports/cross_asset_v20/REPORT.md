@@ -37,3 +37,10 @@ multiplier was **1.48x**, its 95th percentile was
 The total-portfolio result and the short-book result are separate prespecified decisions. A
 portfolio pass does not validate a symmetric long-short CTA claim. No parameter was changed after
 the holdout was read, and this run cannot authorize paper or live orders.
+
+## Post-holdout structural follow-up
+
+The separate [v20.1 comment-driven audit](../cross_asset_v20_comment_audit/COMMENT_ISSUES.md) finds
+that the locked portfolio had SPY beta 0.172, with almost all measured beta in the long book. The
+short book remained negative even in a borrow-free ETF counterfactual over the full holdout. This
+follow-up is diagnostic only and does not revise the frozen v20 decision.

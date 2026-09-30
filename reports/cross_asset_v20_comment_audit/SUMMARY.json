@@ -1,0 +1,40 @@
+{
+  "status": "COMMENT_EVIDENCE_COMPLETE_STRATEGY_REJECTED",
+  "diagnostic_only": true,
+  "changes_to_strategy": false,
+  "orders_allowed": false,
+  "market_beta_assessment": "DIRECTIONAL_LONG_DEPENDENCE_CONFIRMED",
+  "short_book_assessment": "STANDALONE_EXPECTANCY_FAILED",
+  "futures_counterfactual_assessment": "BORROW_REMOVAL_INSUFFICIENT_FULL_HOLDOUT",
+  "market_beta": {
+    "total_beta": 0.1720114610008326,
+    "total_beta_tstat": 19.70379681893571,
+    "total_r_squared": 0.5352982320314661,
+    "total_annualized_alpha": -0.01840080305589536,
+    "long_beta": 0.17503899726187377,
+    "short_beta": -0.0030275362610408907
+  },
+  "directional_exposure": {
+    "average_gross_exposure": 0.7530558734444529,
+    "average_net_exposure": 0.5259453305662959,
+    "average_equity_factor_exposure": 0.13189342683379646,
+    "average_long_gross_exposure": 0.64042672625789,
+    "average_short_gross_exposure": 0.11406019003763669
+  },
+  "short_book": {
+    "locked_borrow_free_expectancy": -0.0006649405115296728,
+    "locked_net_expectancy": -0.0018101342495732,
+    "locked_net_sharpe": -0.4950038413189554,
+    "year_2022_borrow_free_contribution": 0.001432086100118587,
+    "year_2022_net_contribution": -0.0007173932351820626,
+    "year_2022_long_contribution": -0.09122866729877922,
+    "year_2022_borrow_removal_flips_sign": true
+  },
+  "hashes": {
+    "v20_summary_sha256": "b42a55658a2239d9bf617329e15798a26498f967878ed3de2854b5c09fd82187",
+    "locked_daily_sha256": "252c5c412cd5c71e3c2ba546a5e6695ee1472281993e8918befcacc7cf15bbf6",
+    "locked_book_sha256": "1cd8dc0ed4b020065660b4e1b8332da657cee06c728898e8fbaf577a0b75751d",
+    "market_reference_sha256": "97962561f36dba84351f25beba2631d919bb017df7252fe10b71819221153a31",
+    "audit_source_sha256": "0b4735aceaf8b41b396fbcffcb094e30aeaec251b32142d847fedadff4be72bf"
+  }
+}
