@@ -367,6 +367,29 @@ def write_report(output: Path, summary: dict, matrix: pd.DataFrame) -> None:
             f"{str(bool(train.loc[name, 'qualified']))} |"
         )
     selected = summary.get("selected_candidate") or "None"
+    detail = summary.get("selected_development", {})
+    robustness = summary.get("robustness_sharpe", {})
+    failed = [name for name, passed in summary.get("gate_components", {}).items() if not passed]
+    detail_block = ""
+    if detail:
+        detail_block = f"""
+## Selected-candidate audit
+
+- Reused-development Sharpe: **{detail['sharpe']:.3f}**; CAGR:
+  **{detail['cagr']:.2%}**; maximum drawdown: **{detail['max_drawdown']:.2%}**.
+- Long net contribution: **{detail['long_contribution']:.2%}**; short net contribution:
+  **{detail['short_contribution']:.2%}**; annualized short expectancy:
+  **{detail['short_annualized_expectancy']:.2%}**.
+- Frozen-trade 2x-cost Sharpe: **{robustness['frozen_trade_double_cost']:.3f}**;
+  one-session-delay Sharpe: **{robustness['signal_delay_1']:.3f}**; state-cost Sharpe:
+  **{robustness['state_dependent_cost']:.3f}**.
+- Largest residual dynamic name-cap excess: **{detail['maximum_name_cap_excess']:.2%}**.
+- Failed gate components: **{', '.join(failed)}**.
+
+The residual name-cap excess is not hidden. It occurs when a risk-off/cash signal requests a
+faster liquidation than the 0.10% ADV constraint allows. The engine executes the maximum feasible
+reduction and the operational gate fails until the risk cap is restored.
+"""
     report = f"""# v21 Defensive Long-Biased TSMOM
 
 ## Decision
@@ -382,6 +405,8 @@ fresh holdout. The 2022 result is diagnostic and cannot alter the selection.
 {chr(10).join(rows)}
 
 Train-selected candidate: **{selected}**.
+
+{detail_block}
 
 ## Gate interpretation
 
@@ -561,6 +586,21 @@ def main(source: Path, output: Path) -> None:
         "selected_candidate": selected,
         "historical_gate_passed": passed,
         "gate_components": gate_components,
+        "selected_development": {
+            key: float(selected_row[key])
+            for key in (
+                "sharpe", "cagr", "max_drawdown", "annual_turnover",
+                "long_contribution", "short_contribution",
+                "short_annualized_expectancy", "top_5_absolute_contribution_share",
+                "spy_beta", "spy_r_squared", "maximum_name_cap_excess",
+            )
+        },
+        "robustness_sharpe": {
+            name: float(robust.loc[name, "sharpe"])
+            for name in (
+                "frozen_trade_double_cost", "signal_delay_1", "state_dependent_cost"
+            )
+        },
         "positive_development_regimes": positive_regimes,
         "positive_development_sleeves": positive_sleeves,
         "prospective_validation_required": True,

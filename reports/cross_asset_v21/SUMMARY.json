@@ -1,0 +1,42 @@
+{
+  "status": "V21_REJECTED",
+  "reason": "SELECTED_CANDIDATE_FAILED_HISTORICAL_GATE",
+  "selected_candidate": "D",
+  "historical_gate_passed": false,
+  "gate_components": {
+    "development_sharpe": false,
+    "development_cagr": true,
+    "development_drawdown": true,
+    "double_cost": true,
+    "signal_delay": true,
+    "state_cost": true,
+    "concentration": true,
+    "short_expectancy": false,
+    "spy_r_squared": true,
+    "positive_sleeves": true,
+    "positive_regimes": true,
+    "operational": false
+  },
+  "positive_development_regimes": 3,
+  "positive_development_sleeves": 4,
+  "prospective_validation_required": true,
+  "orders_allowed": false,
+  "selected_development": {
+    "sharpe": 0.3987145416574526,
+    "cagr": 0.0147003405979595,
+    "max_drawdown": -0.0789693280588731,
+    "annual_turnover": 4.678186646935548,
+    "long_contribution": 0.1778087998627198,
+    "short_contribution": -0.0553796916233927,
+    "short_annualized_expectancy": -0.006936223801737,
+    "top_5_absolute_contribution_share": 0.3461341867349128,
+    "spy_beta": 0.0821999560706637,
+    "spy_r_squared": 0.153947399723759,
+    "maximum_name_cap_excess": 0.0149912854753549
+  },
+  "robustness_sharpe": {
+    "frozen_trade_double_cost": 0.373980422401785,
+    "signal_delay_1": 0.4048035487887692,
+    "state_dependent_cost": 0.3800263598198354
+  }
+}

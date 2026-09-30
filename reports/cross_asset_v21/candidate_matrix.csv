@@ -1,0 +1,9 @@
+name,short_threshold,fast_overlay,volatility_floor,cash_fallback,short_gross_cap,rates_sleeve_cap
+A,-0.4,False,,False,0.35,0.6
+B,-0.4,True,,False,0.35,0.6
+C,-0.4,True,0.08,False,0.35,0.6
+D,-0.4,True,0.08,True,0.35,0.6
+E,-0.5,True,0.08,True,0.35,0.6
+F,-0.4,True,0.1,True,0.35,0.6
+G,-0.4,True,0.08,True,0.25,0.6
+H,-0.4,True,0.08,True,0.35,0.3

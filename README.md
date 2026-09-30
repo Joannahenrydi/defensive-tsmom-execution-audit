@@ -1,4 +1,37 @@
-# Defensive TSMOM Execution and Short-Book Audit
+# Defensive TSMOM Research and Execution Audit
+
+## Current research status: v21 rejected
+
+The prespecified v21 study tested eight structural repairs after the locked v20 failure:
+asymmetric short entry, a causal fast risk-off overlay, bounded inverse-volatility sizing, explicit
+cash fallback, short-gross caps and a lower rates budget. Selection used 2008–2016 only; 2017–2024
+was treated as reused development evidence.
+
+Candidate D was selected by the train-only rule. It remained profitable in reused development, but
+failed the full gate:
+
+| v21 selected candidate D | Result |
+|---|---:|
+| Train Sharpe | 0.688 |
+| Reused-development Sharpe | **0.399** |
+| Reused-development CAGR | **1.47%** |
+| Reused-development max drawdown | **-7.90%** |
+| Annualized short expectancy | **-0.69%** |
+| Frozen-trade 2x-cost Sharpe | 0.374 |
+| One-session-delay Sharpe | 0.405 |
+| State-dependent-cost Sharpe | 0.380 |
+
+The fast overlay reduced risk but did not create independent short-side expectancy. It also exposed
+an execution conflict: on some risk-off rebalances, the 0.10% ADV limit prevented the requested
+name cap from being restored immediately. The engine now executes the maximum feasible reduction,
+reports the residual cap excess, and fails the operational gate rather than assuming an impossible
+fill. No orders are authorized.
+
+- [Frozen v21 protocol](docs/MULTI_ASSET_PROTOCOL_V21.md)
+- [v21 report](reports/cross_asset_v21/REPORT.md)
+- [v21 machine-readable decision](reports/cross_asset_v21/SUMMARY.json)
+- [Eight-candidate metrics](reports/cross_asset_v21/candidate_metrics.csv)
+- [v21 evaluator](scripts/evaluate_cross_asset_v21.py)
 
 A one-time locked-holdout evaluation of the frozen 45-ETF defensive time-series momentum strategy,
 with standalone long/short accounting and causal state-dependent execution costs.
