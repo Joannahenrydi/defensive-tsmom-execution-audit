@@ -87,7 +87,7 @@ Daily gross contribution is split using the sign of the start-of-session weight.
 entirely to the short book. Transaction cost is allocated using the reconstructed trade:
 
 ```text
-pretrade_weight[t] = weight[t-1] × (1 + return[t-1]) / (1 + net_return[t-1])
+pretrade_weight[t] = weight[t-1] × (1 + return[t-1]) / (1 + baseline_net_return[t-1])
 long_turnover[t] = sum(abs(positive(weight[t]) - positive(pretrade_weight[t])))
 short_turnover[t] = sum(abs(negative(weight[t]) - negative(pretrade_weight[t])))
 ```

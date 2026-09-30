@@ -11,6 +11,7 @@ import pandas as pd
 
 from backtest.cross_asset import CrossAssetResult
 from backtest.engine import performance_metrics
+from scripts.cross_asset_v17_universe import UNIVERSE
 from scripts.evaluate_cross_asset_v12 import TEST, TRAIN, VALIDATION, load_data
 from scripts.evaluate_cross_asset_v13 import segment_metrics
 from scripts.evaluate_cross_asset_v15 import calibrate_absolute
@@ -104,7 +105,10 @@ def reprice_state_dependent_costs(
 
 
 def long_short_daily_attribution(
-    result: CrossAssetResult, returns: pd.DataFrame
+    result: CrossAssetResult,
+    returns: pd.DataFrame,
+    *,
+    baseline_net_return: pd.Series | None = None,
 ) -> pd.DataFrame:
     """Allocate gross return and realized costs to long and short books."""
     daily = result.daily.reindex(returns.index)
@@ -117,7 +121,8 @@ def long_short_daily_attribution(
 
     prior_weight = weights.shift(1).fillna(0.0)
     prior_return = aligned_returns.shift(1).fillna(0.0)
-    prior_net = daily["net_return"].shift(1).fillna(0.0)
+    drift_net = daily["net_return"] if baseline_net_return is None else baseline_net_return
+    prior_net = drift_net.reindex(returns.index).shift(1).fillna(0.0)
     pretrade = prior_weight.mul(1 + prior_return).div(1 + prior_net, axis=0)
     pretrade.iloc[0] = 0.0
 
@@ -299,7 +304,7 @@ def main(source: Path, output: Path) -> None:
     if source_digest != EXPECTED_SOURCE_SHA256:
         raise RuntimeError("source hash does not match the frozen v19 archive")
 
-    data = load_data(source, TEST[1])
+    data = load_data(source, TEST[1], UNIVERSE)
     features = build_defensive_tsmom(data)
     calibration = calibrate_absolute(features["sizing_score"], data["returns"])
     if (
@@ -332,7 +337,11 @@ def main(source: Path, output: Path) -> None:
     evaluation_table.to_csv(output / "evaluation.csv", index=False)
 
     baseline_books = long_short_daily_attribution(baseline, data["returns"])
-    state_books = long_short_daily_attribution(state_cost, data["returns"])
+    state_books = long_short_daily_attribution(
+        state_cost,
+        data["returns"],
+        baseline_net_return=baseline.daily["net_return"],
+    )
     segment_map = {
         "train": TRAIN,
         "development": VALIDATION,
