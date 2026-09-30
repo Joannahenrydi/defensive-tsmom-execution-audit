@@ -113,6 +113,7 @@ the frozen strategy:
 | Is the short book independently profitable? | Net expectancy -0.18%; Sharpe -0.495 | **No** |
 | Does removing borrow repair the short book? | Borrow-free expectancy -0.07% | **No over the full holdout** |
 | Did shorts hedge 2022? | +0.14% before borrow, -0.07% after borrow, versus -9.12% from the long book | **Too small; net defense failed** |
+| Does deleveraging coincide with worse execution? | 2 tail events at 2.24× mean cost versus 1.43× otherwise; liquidity multiplier 1.04× versus 1.07× | **Tail cost interaction present, economically small and not liquidity-driven** |
 
 Average locked net exposure was 52.6%. Regression alpha versus SPY was -1.84% annualized. The
 evidence confirms that the observed return was mainly a directional long trend result rather than
@@ -122,6 +123,14 @@ The borrow-free test is an ETF counterfactual, not a futures backtest. It shows 
 the 2022 sign flip, but not the multi-year short-side failure. A valid futures claim requires
 contract-level roll, carry, basis, collateral, margin and execution data under a separately frozen
 protocol.
+
+The deleveraging interaction audit reconstructs drifted pretrade gross exposure and aligns each
+rebalance with its following-session realized cost. Across all 100 rebalances, gross change and the
+cost multiplier had Pearson correlation 0.093 and Spearman correlation 0.015 (p=0.883), providing
+no evidence of a broad monotonic relationship. The single 2022 deleveraging event occurred at a
+2.84× cost multiplier, but its state-dependent transaction cost was only 0.006% of NAV, equal to
+0.066% of the absolute 2022 arithmetic loss. Futures-style margin stress remains outside the cash
+ETF dataset and is specified only in the futures-native follow-up protocol.
 
 ## Evidence
 
@@ -141,8 +150,14 @@ protocol.
 - [Short cost waterfall](reports/cross_asset_v20_comment_audit/short_cost_waterfall.csv)
 - [2022 book teardown](reports/cross_asset_v20_comment_audit/locked_yearly_book_teardown.csv)
 - [Regime book diagnostics](reports/cross_asset_v20_comment_audit/regime_book_diagnostics.csv)
+- [Deleveraging interaction report](reports/cross_asset_v20_comment_audit/DELEVERAGING_INTERACTION.md)
+- [Rebalance-level execution audit](reports/cross_asset_v20_comment_audit/deleveraging_execution_audit.csv)
+- [Deleveraging execution summary](reports/cross_asset_v20_comment_audit/deleveraging_execution_summary.csv)
+- [Deleveraging audit decision](reports/cross_asset_v20_comment_audit/DELEVERAGING_SUMMARY.json)
 - [Comment audit implementation](scripts/audit_v20_comment_claims.py)
 - [Comment audit tests](tests/test_v20_comment_audit.py)
+- [Deleveraging audit implementation](scripts/audit_v20_deleveraging_interaction.py)
+- [Deleveraging audit tests](tests/test_v20_deleveraging_interaction.py)
 - [Futures-native research specification](docs/FUTURES_RESEARCH_SPEC.md)
 
 ## Reproduction safeguards

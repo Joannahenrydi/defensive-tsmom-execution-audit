@@ -15,6 +15,7 @@ holdings and returns. It does not change the signal, portfolio, costs, gates or 
 | Is borrow drag the only reason the short book fails? | Locked borrow-free short expectancy -0.07%. | **No. It remains negative before borrow over the full holdout.** |
 | Did shorts provide defense in 2022? | 2022 borrow-free short contribution 0.14%; after borrow -0.07%; long contribution -9.12%. | **Weak gross defense existed, but borrow reversed it and its size was immaterial versus the long loss.** |
 | Would replacing ETF shorts with futures solve the problem? | Zero-borrow counterfactual is still negative over 2021–2024. | **Borrow removal alone is insufficient. A real futures test still requires contract-level roll, carry, margin and execution data.** |
+| Does deleveraging occur under worse execution conditions? | Tail deleveraging mean cost multiplier 2.24× versus 1.43× otherwise; liquidity multiplier 1.04× versus 1.07×. | **Tail interaction exists, but is volatility/drawdown-driven and economically small.** |
 
 ## Equity-beta attribution
 
@@ -49,3 +50,14 @@ margin and different execution costs. Those cannot be inferred from ETF returns.
 
 The next admissible strategy is a separately frozen futures-native study. The consumed 2021–2024
 ETF holdout cannot be used for parameter selection.
+
+## Deleveraging interaction closure
+
+The [rebalance-level interaction audit](DELEVERAGING_INTERACTION.md) reconstructs drifted pretrade
+gross exposure and aligns trades with following-session costs. Only two of 100 rebalances reduced
+gross by more than 10%. Their average cost multiplier was 2.24×, but their liquidity multiplier was
+not worse than other rebalances. The single 2022 event cost 0.006% of NAV, just 0.066% of that
+year's absolute arithmetic loss. Gross change had Pearson correlation 0.093 and Spearman
+correlation 0.015 (p=0.883) with the cost multiplier. Aaron's concern is therefore closed as a
+descriptive tail interaction that is too small to explain the failure, with futures margin correctly
+left outside the cash-ETF evidence.

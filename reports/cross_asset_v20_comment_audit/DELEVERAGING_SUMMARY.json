@@ -1,0 +1,58 @@
+{
+  "status": "INTERACTION_PRESENT_IN_TAIL_BUT_ECONOMICALLY_SMALL",
+  "diagnostic_only": true,
+  "changes_to_strategy": false,
+  "orders_allowed": false,
+  "definition": {
+    "deleveraging_threshold": -0.1,
+    "expansion_threshold": 0.1,
+    "cost_alignment": "following_session"
+  },
+  "locked": {
+    "total_rebalances": 100,
+    "expansion_events": 1,
+    "normal_events": 97,
+    "deleveraging_events": 2,
+    "expansion_cost_multiplier": 4.0,
+    "normal_cost_multiplier": 1.404084919038089,
+    "deleveraging_cost_multiplier": 2.2385872258456194,
+    "other_cost_multiplier": 1.4305738484356596,
+    "expansion_liquidity_multiplier": 1.30144651682305,
+    "normal_liquidity_multiplier": 1.0696953029441962,
+    "deleveraging_liquidity_multiplier": 1.0443820048231338,
+    "other_liquidity_multiplier": 1.0720601112490824,
+    "expansion_volatility_multiplier": 2.2760328576563147,
+    "normal_volatility_multiplier": 1.1509052175213899,
+    "deleveraging_volatility_multiplier": 1.4480094790739457,
+    "expansion_turnover": 0.1016729586989279,
+    "normal_turnover": 0.015935941723258625,
+    "deleveraging_turnover": 0.10267970777337829,
+    "expansion_cost": 8.167991341119622e-05,
+    "normal_cost": 0.0004125248185412703,
+    "deleveraging_cost": 9.310791135136777e-05
+  },
+  "correlation": {
+    "pearson_correlation": 0.09265143928943419,
+    "spearman_correlation": 0.014937372301233993,
+    "spearman_pvalue": 0.8827342711450838,
+    "ols_slope": 2.006677173603149,
+    "ols_slope_pvalue": 0.3592265339421189
+  },
+  "year_2022": {
+    "events": 1,
+    "decision_session": "2022-03-07",
+    "execution_session": "2022-03-08",
+    "cost_multiplier": 2.844028437221837,
+    "liquidity_multiplier": 1.0,
+    "volatility_multiplier": 1.8960189581478917,
+    "state_cost": 6.0244644667415406e-05,
+    "incremental_cost": 3.9061788730058876e-05,
+    "cost_share_of_loss": 0.0006552172471289656
+  },
+  "hashes": {
+    "source_sha256": "82347fef112a5f04dc2b5accf947f362eefe1a0a89f1c59bf143a369ab63e32e",
+    "weights_sha256": "3a277778fcb28b765bddaa4a22bac84011861af7e2a79be1ad2613b7f6adceab",
+    "multipliers_sha256": "5e5b53b719be74adb68d45242261ed0eb79d65267f8591b7b89605020e9c93cf",
+    "audit_source_sha256": "1d4ed356cb3605e4e63f33b6ba88188dff21af6e3f34c6606acaeb400205507c"
+  }
+}
