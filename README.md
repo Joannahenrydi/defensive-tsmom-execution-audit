@@ -1,112 +1,121 @@
-# Defensive Time-Series Momentum Research
+# Defensive TSMOM Execution and Short-Book Audit
 
-A frozen, cost-aware study of absolute time-series momentum across 45 liquid cross-asset ETFs.
-The project asks whether a simple defensive trend rule can retain positive performance across a
-training sample and a reused development audit without parameter search or access to the locked
-holdout.
+A one-time locked-holdout evaluation of the frozen 45-ETF defensive time-series momentum strategy,
+with standalone long/short accounting and causal state-dependent execution costs.
 
-> **Status: DEVELOPMENT ACCEPTED; LOCKED TEST NOT EVALUATED.** The candidate passed its
-> prespecified development progression gate, failed the stricter 5% CAGR promotion gate, and is
-> not authorized for paper or live trading. The 2021–2024 holdout remains untouched.
+> **Decision: LOCKED PORTFOLIO FAIL · LONG-DRIVEN, NOT SYMMETRIC.** The frozen strategy remained
+> profitable in 2021–2024, but its 0.150 Sharpe did not pass the prespecified 0.50 gate. The short
+> book had negative expectancy after transaction and borrow costs. No parameters were changed after
+> the holdout was read, and orders remain disabled.
 
-## Research question
+## Why this audit exists
 
-Can a fixed 3/6/12-month absolute momentum signal, combined with trend confirmation, a dead zone
-and explicit macro risk budgets, produce stable net returns after modeled trading and borrow costs?
+The preceding development study produced a 0.927 net Sharpe but showed that almost all positive
+contribution came from the long book. It also used a largely exogenous cost model. This audit was
+frozen before accessing 2021–2024 to answer two narrower questions:
 
-This repository evaluates one prespecified candidate rather than selecting the best result from a
-parameter sweep.
+1. Does the unchanged portfolio survive a genuinely untouched holdout under harsher,
+   state-dependent costs?
+2. Does the short book produce standalone positive expectancy after allocated trading costs and
+   borrow?
 
-| Research window | Dates | Role |
-|---|---|---|
-| Train | 2008-01-02 to 2016-12-30 | Signal calibration and fixed portfolio design |
-| Reused development audit | 2017-01-03 to 2020-12-31 | Progression decision; not pristine OOS evidence |
-| Locked test | 2021-01-04 to 2024-12-31 | **Not loaded or evaluated** |
+The protocol, evaluator and tests were committed before the one-time locked run.
 
 ## Frozen strategy
 
-The universe contains 45 ETFs spanning equities, rates, credit, metals, commodities and
-currencies. For each ETF, the signal is:
+- 45 liquid ETFs across equities, rates, credit, metals, commodities and currencies.
+- Absolute 3/6/12-month momentum weighted 25%/35%/40%, skipping the most recent 21 sessions.
+- 200-session trend confirmation and a fixed 0.25 signal dead zone.
+- Inverse 60-session volatility sizing.
+- 8% annual volatility cap and rebalancing every 10 sessions.
+- Fixed gross, net, name, turnover, liquidity, macro-factor and sleeve budgets.
+- Spread, slippage, square-root impact and a 1% annual short-borrow proxy.
 
-```text
-momentum = 0.25 × MOM_3m + 0.35 × MOM_6m + 0.40 × MOM_12m
-```
+The signal, portfolio constraints, universe and cost assumptions are identical to the frozen v19
+candidate. v20 changes only the audit depth.
 
-Each component skips the most recent 21 sessions. A long signal is retained only above the
-200-session moving average; a short signal is retained only below it. Signals with absolute value
-below 0.25 are set to zero, then scaled by trailing 60-session volatility.
+## One-time locked result
 
-The portfolio rebalances every 10 sessions with an 8% annual volatility target, 100% gross cap,
-10% name cap, 60% net cap, turnover and liquidity constraints, and macro factor and sleeve risk
-budgets. The cost model includes spread, slippage, square-root market impact and a short-borrow
-proxy. Exact macro neutrality is prohibited because it removes the directional trend exposure the
-strategy is designed to earn.
+| 2021–2024 evaluation | Net Sharpe | Net CAGR | Max drawdown | Decision |
+|---|---:|---:|---:|---|
+| Frozen v19 baseline | **0.150** | **0.51%** | **-11.03%** | Fail: Sharpe below 0.50 |
+| Same trades, 2× transaction cost | **0.147** | **0.50%** | **-11.03%** | Stress remains positive |
+| Same trades, state-dependent costs | **0.131** | **0.44%** | **-11.22%** | Stress remains positive |
 
-## Results
+The strategy earned positive returns in three of four locked years:
 
-All figures below are net of modeled transaction and borrow costs.
-
-| Evaluation | Net Sharpe | Net CAGR | Max drawdown | Annual turnover |
+| Year | Baseline return | Baseline Sharpe | State-cost return | State-cost Sharpe |
 |---|---:|---:|---:|---:|
-| Train 2008–2016 | **1.210** | **2.45%** | **-5.20%** | 0.201 |
-| Development 2017–2020 | **0.927** | **3.60%** | **-9.53%** | 0.611 |
-| Frozen trades, 2× transaction cost | **0.923** | **3.59%** | **-9.53%** | 0.611 |
-| Signal delayed by one session | **0.984** | **3.20%** | **-7.92%** | 0.581 |
+| 2021 | +1.90% | 0.673 | +1.88% | 0.669 |
+| 2022 | **-8.93%** | **-1.642** | **-9.15%** | **-1.684** |
+| 2023 | +5.64% | 1.484 | +5.62% | 1.476 |
+| 2024 | +4.08% | 1.673 | +4.08% | 1.673 |
 
-The frozen-cost stress keeps holdings, trades, turnover, gross returns and borrow charges identical
-to the development baseline. It only doubles each realized transaction charge. The small change in
-Sharpe shows that transaction costs are not the binding constraint for this low-turnover candidate.
+The 2022 loss is the binding regime failure. The total locked period stayed profitable because the
+other three years recovered the drawdown, but the risk-adjusted result was too weak for promotion.
 
-Development calendar returns were positive in three of four years: +4.81% in 2017, -1.02% in
-2018, +7.39% in 2019 and +3.40% in 2020. The result is therefore not explained solely by the 2020
-market regime.
+## Short-book teardown
 
-## Robustness and limitations
+Transaction costs are allocated by reconstructed long and short turnover; borrow is assigned
+entirely to the short book. Daily long and short net contributions reconcile exactly to total
+portfolio net return.
 
-- A one-session signal delay did not eliminate the development result.
-- The frozen-trade 2× transaction-cost stress remained positive with a 0.923 Sharpe.
-- The top five ETFs—SPY, LQD, EMB, HYG and MUB—generated **75.5%** of absolute development
-  contribution; the comparable train concentration was 83.3%.
-- Development long-book contribution was **+15.02%**, while short-book contribution was
-  **-0.27%**. The result behaves more like a risk-managed long trend portfolio than a symmetric
-  long-short CTA.
-- Credit contributed **+7.74%** and equities **+5.96%** during development. The 45-ETF universe
-  should not be interpreted as 45 independent sources of alpha.
-- The development interval was examined by earlier research rounds. Its 0.927 Sharpe is reused
-  evidence, not an unbiased out-of-sample estimate.
-- The source is adjusted third-party ETF history rather than an exchange-grade point-in-time
-  archive. Historical evidence cannot replace prospective paper execution.
+| Segment | Short net annualized expectancy | Short Sharpe | Average short gross exposure |
+|---|---:|---:|---:|
+| Train 2008–2016 | -0.05% | -2.734 | 5.09% |
+| Reused development 2017–2020 | -0.13% | -0.451 | 6.18% |
+| Locked test 2021–2024 | **-0.18%** | **-0.495** | 11.41% |
+| Locked 2022 only | **-0.07%** | **-0.125** | 21.53% |
 
-These findings are recorded as
-`REVIEW_REQUIRED_CONCENTRATED_LONG_BOOK`. They are disclosed rather than repaired after observing
-development because adding concentration penalties, tightening sleeve caps or forcing a stronger
-short book at this stage would be another round of development optimization.
+The 2022 short book generated positive gross contribution, but borrow and allocated transaction
+costs more than consumed it. The evidence rejects a symmetric long-short CTA interpretation. The
+portfolio is better described as a risk-managed long trend strategy with a weak short overlay.
 
-## Locked-test discipline
+## State-dependent execution stress
 
-The strategy definition, universe, momentum weights, 21-session skip, 200-day confirmation,
-0.25 dead zone, 60-day volatility estimate, 8% volatility target, 10-session rebalance schedule,
-risk budgets and cost assumptions are frozen under tag
-[`v19-development-freeze-20260927`](https://github.com/Joannahenrydi/defensive-tsmom-research/tree/v19-development-freeze-20260927).
+All stressed results retain the baseline holdings and trades. Cost multipliers use only information
+available by the previous close:
 
-No 2021–2024 performance file exists, `locked_test_evaluated` remains `false`, and paper-order
-generation remains disabled. A separate protocol must be frozen before the holdout is read once.
-The candidate will not be modified in response to that result.
+- SPY 20-session realized volatility relative to its trailing 252-session median;
+- cross-sectional ETF dollar-volume liquidity relative to trailing 60-session norms; and
+- a 1.5× stress factor when prior SPY drawdown is at least 10%.
 
-## Key evidence
+| Multiplier | Mean | 95th percentile | Maximum |
+|---|---:|---:|---:|
+| Transaction cost | 1.48× | 2.84× | 4.00× |
+| Borrow cost | 1.35× | 2.66× | 3.00× |
 
-- [Research protocol](docs/MULTI_ASSET_PROTOCOL_V19.md)
-- [v19 report](reports/cross_asset_v19/REPORT.md)
-- [Machine-readable decision](reports/cross_asset_v19/SUMMARY.json)
-- [Complete evaluation table](reports/cross_asset_v19/evaluation.csv)
-- [Asset attribution](reports/cross_asset_v19/asset_attribution.csv)
-- [Yearly attribution](reports/cross_asset_v19/yearly_attribution.csv)
-- [Sleeve attribution](reports/cross_asset_v19/sleeve_attribution.csv)
-- [Long/short attribution](reports/cross_asset_v19/long_short_attribution.csv)
-- [Drawdown-regime attribution](reports/cross_asset_v19/drawdown_regime_attribution.csv)
-- [Contribution concentration](reports/cross_asset_v19/contribution_concentration.csv)
+Costs are not the primary reason the total portfolio failed: the state-dependent stress reduced
+Sharpe by only 0.018. The main weakness is unstable gross performance, particularly in 2022.
 
-## Reproduction
+## Research decision
+
+The outcome is intentionally fail-closed:
+
+- `LOCKED_PORTFOLIO_FAIL`: locked Sharpe missed the frozen 0.50 threshold.
+- `LONG_DRIVEN_NOT_SYMMETRIC`: short-book expectancy and Sharpe were negative in train,
+  development and locked test.
+- `orders_allowed: false`: neither paper nor live trading is authorized.
+
+The 2021–2024 holdout is now consumed and cannot be reused to tune the strategy. A future candidate
+must use a new version and prospective evaluation period. The economically relevant next research
+direction is a futures implementation with explicit roll, margin, carry and short-side execution,
+rather than trying to repair cash-ETF shorts on the consumed holdout.
+
+## Evidence
+
+- [Frozen v20 protocol](docs/MULTI_ASSET_PROTOCOL_V20.md)
+- [Locked audit report](reports/cross_asset_v20/REPORT.md)
+- [Machine-readable decision](reports/cross_asset_v20/SUMMARY.json)
+- [Portfolio evaluations](reports/cross_asset_v20/evaluation.csv)
+- [Long/short metrics](reports/cross_asset_v20/book_metrics.csv)
+- [Locked yearly results](reports/cross_asset_v20/locked_yearly.csv)
+- [State multiplier summary](reports/cross_asset_v20/state_multiplier_summary.csv)
+- [Daily book reconciliation](reports/cross_asset_v20/locked_book_daily.csv)
+- [Frozen evaluator](scripts/evaluate_cross_asset_v20.py)
+- [Audit tests](tests/test_cross_asset_v20.py)
+
+## Reproduction safeguards
 
 ```bash
 python -m venv .venv
@@ -116,51 +125,8 @@ pytest -q
 ruff check data features models portfolio execution risk backtest live scripts tests
 ```
 
-Collect the cross-asset ETF panel and run the frozen v19 evaluation:
-
-```bash
-python -m scripts.collect_cross_asset_etfs_v17 \
-  --output output/cross_asset_etfs_v17 --start 2007-01-01 --end 2025-01-01
-python -m scripts.evaluate_cross_asset_v19
-```
-
-The evaluator reads only the train and reused-development windows. It does not import or evaluate
-the locked-test window.
-
-## Repository map
-
-- `scripts/evaluate_cross_asset_v19.py`: frozen signal, stress tests and attribution pipeline.
-- `backtest/`: portfolio accounting, holding drift and walk-forward infrastructure.
-- `portfolio/`: risk-budgeted construction and cost-aware optimization.
-- `execution/`: commission, spread, slippage, impact and borrow models.
-- `risk/`: fail-closed promotion rules.
-- `reports/cross_asset_v19/`: reproducible v19 evidence and decision artifacts.
-- `tests/`: look-ahead, cost-repricing, attribution and portfolio-control tests.
-
-## Research lineage
-
-<details>
-<summary>Earlier experiments retained for auditability</summary>
-
-The project began with U.S. equity residual and Kalman alpha research, then moved to cross-asset
-trend after the equity signals failed net-of-cost promotion gates. v13 identified that exact macro
-neutrality removed the intended trend exposure. v15 established the profitable time-series trend
-baseline. v16–v18 improved training results but weakened in development, so their additional
-cross-sectional and ensemble components were rejected. v19 returned to absolute momentum and
-changed only the prespecified defensive construction.
-
-| Experiment | Train net Sharpe | Development net Sharpe | Decision |
-|---|---:|---:|---|
-| v13 exact-neutral trend | -0.444 | -0.715 | Rejected |
-| v13 risk-budgeted trend | 0.726 | 0.638 | Rejected: drawdown |
-| v15 time-series trend | 0.688 | 0.547 | Rejected: return gate |
-| v16 trend ensemble | 0.865 | 0.431 | Rejected: instability |
-| v18 expanded universe | 0.823 | 0.212 | Rejected: instability |
-
-- [v13–v18 consolidated report](reports/cross_asset_v13_v18/REPORT.md)
-- [Research ladder](reports/cross_asset_v13_v18/research_ladder.png)
-- [Archived equity research](reports/equity_final/REPORT.md)
-
-</details>
+The committed reports are the single decision record. Re-running the evaluator is reproduction,
+not a new holdout. It must use the frozen source hash recorded in `SUMMARY.json` and must not be
+used to change v20 parameters.
 
 Historical backtests are research evidence, not a guarantee of future performance.

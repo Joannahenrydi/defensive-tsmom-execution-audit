@@ -1,0 +1,25 @@
+{
+  "status": "LOCKED_AUDIT_COMPLETE",
+  "portfolio_decision": "LOCKED_PORTFOLIO_FAIL",
+  "short_book_decision": "LONG_DRIVEN_NOT_SYMMETRIC",
+  "locked_test_evaluated": true,
+  "locked_test_run_count": 1,
+  "orders_allowed": false,
+  "short_book": {
+    "locked_annualized_expectancy": -0.0018101342495732127,
+    "locked_sharpe": -0.4950038413189554,
+    "year_2022_net_contribution": -0.0007173932351819574,
+    "year_2022_sharpe": -0.12524402680949068
+  },
+  "state_cost": {
+    "transaction_mean": 1.4816441082681777,
+    "transaction_p95": 2.842865380945691,
+    "transaction_max": 4.0
+  },
+  "hashes": {
+    "protocol_sha256": "b61515d7d55b8c073314c41ca112f9517fb903c6ef3cb7b6833a2dd03b1a3c17",
+    "source_sha256": "82347fef112a5f04dc2b5accf947f362eefe1a0a89f1c59bf143a369ab63e32e",
+    "evaluator_sha256": "b47b0622e8b4b7b3db3d48c589a671191071886349ba202ff2fd8e47b125dab1",
+    "v19_freeze_sha256": "b8fb6096dd732b93ae2dcf9229168035154e1f370f4a0dae3f631f0ba45661be"
+  }
+}
