@@ -133,6 +133,28 @@ def test_optimizer_enforces_short_gross_cap():
     assert result.rebalances["short_gross_budget_ratio"].max() <= 1.0001
 
 
+def test_optimizer_enforces_long_gross_cap():
+    rng = np.random.default_rng(451)
+    index = pd.bdate_range("2018-01-02", periods=150)
+    columns = [f"A{i}" for i in range(12)]
+    returns = pd.DataFrame(rng.normal(0, .004, (150, 12)), index=index, columns=columns)
+    alpha = pd.DataFrame(.004, index=index, columns=columns)
+    adv = pd.DataFrame(100_000_000.0, index=index, columns=columns)
+    eligibility = pd.DataFrame(True, index=index, columns=columns)
+    factors = pd.DataFrame({"factor": [1, -1] * 6}, index=columns)
+    sleeves = pd.Series(["all"] * 12, index=columns)
+    result = run_risk_budget_backtest(
+        alpha, returns, adv, eligibility, factors, pd.Series({"factor": 1.0}),
+        sleeves, pd.Series({"all": 1.0}),
+        config=RiskBudgetConfig(
+            covariance_window=60, net_cap=1.0, max_long_gross=.20,
+        ),
+    )
+    assert result.status == "COMPLETED"
+    assert result.rebalances["long_gross"].max() <= .2001
+    assert result.rebalances["long_gross_budget_ratio"].max() <= 1.0001
+
+
 def test_name_scaler_validation_rejects_noncausal_ranges():
     index = pd.bdate_range("2018-01-02", periods=20)
     columns = [f"A{i}" for i in range(8)]

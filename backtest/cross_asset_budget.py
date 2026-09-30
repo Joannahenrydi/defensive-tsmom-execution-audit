@@ -23,6 +23,7 @@ class RiskBudgetConfig:
     max_participation: float = 0.001
     annual_volatility_cap: float = 0.10
     net_cap: float = 0.35
+    max_long_gross: float | None = None
     max_short_gross: float | None = None
     liquidity_limited_cap_reduction: bool = False
     nav: float = 100_000.0
@@ -86,6 +87,8 @@ def run_risk_budget_backtest(
         raise ValueError("name scaler must be finite")
     if name_scaler.lt(0).any().any() or name_scaler.gt(1).any().any():
         raise ValueError("name scaler must be in [0, 1]")
+    if config.max_long_gross is not None and config.max_long_gross < 0:
+        raise ValueError("maximum long gross must be nonnegative")
     if config.max_short_gross is not None and config.max_short_gross < 0:
         raise ValueError("maximum short gross must be nonnegative")
     active = pd.Series(0.0, index=columns)
@@ -128,6 +131,7 @@ def run_risk_budget_backtest(
             fixed = active.drop(names)
             fixed_gross = float(fixed.abs().sum())
             fixed_net = float(fixed.sum())
+            fixed_long_gross = float(fixed.clip(lower=0).sum())
             fixed_short_gross = float(fixed.clip(upper=0).abs().sum())
             factors = factor_loadings.loc[names]
             fixed_factor_exposure = factor_loadings.drop(index=names).T @ fixed
@@ -187,6 +191,13 @@ def run_risk_budget_backtest(
                 max(0.0, abs(previous.sum() + fixed_net) - config.net_cap * scale)
             )
             required_reduction.append(float(np.maximum(np.abs(previous) - scaled_name, 0).sum()))
+            if config.max_long_gross is not None:
+                current_long_gross = float(
+                    np.maximum(previous, 0).sum() + fixed_long_gross
+                )
+                required_reduction.append(
+                    max(0.0, current_long_gross - config.max_long_gross * scale)
+                )
             if config.max_short_gross is not None:
                 current_short_gross = float(
                     np.abs(np.minimum(previous, 0)).sum() + fixed_short_gross
@@ -215,6 +226,13 @@ def run_risk_budget_backtest(
                 max(0.0, np.abs(cap_target).sum() + fixed_gross - scaled_gross),
                 max(0.0, abs(cap_target.sum() + fixed_net) - config.net_cap * scale),
             ]
+            if config.max_long_gross is not None:
+                post_cap_long = float(
+                    np.maximum(cap_target, 0).sum() + fixed_long_gross
+                )
+                post_cap_corrections.append(
+                    max(0.0, post_cap_long - config.max_long_gross * scale)
+                )
             if config.max_short_gross is not None:
                 post_cap_short = float(
                     np.abs(np.minimum(cap_target, 0)).sum() + fixed_short_gross
@@ -244,6 +262,13 @@ def run_risk_budget_backtest(
             add(np.r_[np.zeros(2 * n), np.ones(n)], turnover_limit)
             add(np.r_[np.ones(n), np.zeros(2 * n)], config.net_cap * scale - fixed_net)
             add(np.r_[-np.ones(n), np.zeros(2 * n)], config.net_cap * scale + fixed_net)
+            if config.max_long_gross is not None:
+                # For exact auxiliaries u=|w|, (u+w)/2 equals the long gross.
+                remaining_long = config.max_long_gross * scale - fixed_long_gross
+                add(
+                    np.r_[0.5 * np.ones(n), 0.5 * np.ones(n), np.zeros(n)],
+                    remaining_long,
+                )
             if config.max_short_gross is not None:
                 # For exact auxiliaries u=|w|, (u-w)/2 equals the short gross.
                 remaining_short = config.max_short_gross * scale - fixed_short_gross
@@ -281,6 +306,14 @@ def run_risk_budget_backtest(
                 return np.r_[-2 * cov @ x[:dimension], np.zeros(2 * dimension)]
 
             initial_weight = np.clip(previous, lower_name, upper_name)
+            if config.max_long_gross is not None:
+                remaining_long = max(
+                    0.0, config.max_long_gross * scale - fixed_long_gross
+                )
+                initial_long = float(np.maximum(initial_weight, 0).sum())
+                if initial_long > remaining_long and initial_long > 0:
+                    positive = initial_weight > 0
+                    initial_weight[positive] *= remaining_long / initial_long
             if config.max_short_gross is not None:
                 remaining_short = max(
                     0.0, config.max_short_gross * scale - fixed_short_gross
@@ -392,6 +425,7 @@ def run_risk_budget_backtest(
             active = target
             factor_exposure = factor_loadings.T @ target
             sleeve_gross = target.abs().groupby(asset_sleeves).sum()
+            long_gross = float(target.clip(lower=0).sum())
             short_gross = float(target.clip(upper=0).abs().sum())
             name_cap_excess = float(
                 np.maximum(np.abs(target.loc[names].to_numpy()) - scaled_name, 0).max()
@@ -401,8 +435,15 @@ def run_risk_budget_backtest(
                 if config.max_short_gross not in (None, 0)
                 else (0.0 if short_gross == 0 else np.nan)
             )
+            long_budget_ratio = (
+                long_gross / (config.max_long_gross * scale)
+                if config.max_long_gross not in (None, 0)
+                else (0.0 if long_gross == 0 else np.nan)
+            )
             rebalances.append({"session": session, "eligible_assets": len(names),
                                "gross": float(target.abs().sum()), "net": float(target.sum()),
+                               "long_gross": long_gross,
+                               "long_gross_budget_ratio": long_budget_ratio,
                                "short_gross": short_gross,
                                "short_gross_budget_ratio": short_budget_ratio,
                                "maximum_name_cap_excess": name_cap_excess,
