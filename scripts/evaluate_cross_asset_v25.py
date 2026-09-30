@@ -39,6 +39,7 @@ from scripts.evaluate_equity_v7 import sha256
 
 PROTOCOL = Path("docs/MULTI_ASSET_PROTOCOL_V25.md")
 V24_SUMMARY = Path("reports/cross_asset_v24/SUMMARY.json")
+V24_YEARLY = Path("reports/cross_asset_v24/yearly.csv")
 EXPECTED_SOURCE_SHA256 = "82347fef112a5f04dc2b5accf947f362eefe1a0a89f1c59bf143a369ab63e32e"
 EXPECTED_V24_SLOPE = 5.1513871248276005e-05
 EXPECTED_V24_DIGEST = "fd015ea2c63e5ca7952585fb7c50d88d6ebd9f18fe5bdf7a9fe01410dab348e3"
@@ -230,7 +231,10 @@ short cap while limiting long gross to 50%. The common v24 risk scaler still con
   **{risk_off.loc['train', 'sharpe']:.3f}**.
 - Reused-development risk-off sessions: **{int(risk_off.loc['development', 'sessions'])}**;
   short expectancy: **{risk_off.loc['development', 'annualized_arithmetic_expectancy']:.2%}**;
-  short Sharpe: **{risk_off.loc['development', 'sharpe']:.3f}**.
+  short Sharpe: **{risk_off.loc['development', 'sharpe']:.3f}**; average short gross:
+  **{risk_off.loc['development', 'average_gross_exposure'] * 100:.2e}%**.
+- v24 versus v25 total return in 2022: **{summary['year_comparison']['2022']['v24']:.2%} / {summary['year_comparison']['2022']['v25']:.2%}**; in 2023:
+  **{summary['year_comparison']['2023']['v24']:.2%} / {summary['year_comparison']['2023']['v25']:.2%}**.
 - Failed gate components: **{', '.join(failed) if failed else 'None'}**.
 
 The regime hypothesis is evaluated on reused data and 2022 helped form it. A positive result would
@@ -381,6 +385,13 @@ def main(source: Path, output: Path) -> None:
         "development_operational": operational_pass(development),
     }
     passed = all(gate_components.values())
+    v24_yearly = pd.read_csv(V24_YEARLY).assign(version="v24")
+    v25_yearly = tables["yearly"].copy().assign(version="v25")
+    yearly_comparison = pd.concat([v24_yearly, v25_yearly], ignore_index=True)
+    yearly_comparison.to_csv(output / "v24_v25_yearly.csv", index=False)
+    yearly_lookup = yearly_comparison.set_index(["year", "version"])[
+        "net_return_compounded"
+    ]
     summary = {
         "status": (
             "V25_HISTORICAL_GATE_PASS_PROSPECTIVE_REQUIRED"
@@ -399,9 +410,21 @@ def main(source: Path, output: Path) -> None:
                     if key == "sessions"
                     else float(risk_off_short.loc[segment, key])
                 )
-                for key in ("sessions", "annualized_arithmetic_expectancy", "sharpe")
+                for key in (
+                    "sessions",
+                    "annualized_arithmetic_expectancy",
+                    "sharpe",
+                    "average_gross_exposure",
+                )
             }
             for segment in ("train", "development")
+        },
+        "year_comparison": {
+            str(year): {
+                version: float(yearly_lookup.loc[(year, version)])
+                for version in ("v24", "v25")
+            }
+            for year in (2022, 2023)
         },
         "robustness_sharpe": {
             name: float(robust.loc[name, "sharpe"])

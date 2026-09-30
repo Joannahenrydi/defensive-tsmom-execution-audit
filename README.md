@@ -1,6 +1,38 @@
 # Defensive TSMOM Research and Execution Audit
 
-## Current research status: v24 dynamic symmetric TSMOM rejected
+## Current research status: v25 regime-aware TSMOM rejected
+
+v25 retained the complete v24 signal and changed only side treatment. The prespecified risk-off
+state required SPY below its 200-day average, negative 252-session return and 20-day volatility
+above its prior 70th percentile. Risk-on sessions halved negative scores and capped short gross at
+25%; risk-off sessions restored the full short score and a 100% short cap while limiting long gross
+to 50%.
+
+| v25 evidence | Train | Reused development 2017–2024 |
+|---|---:|---:|
+| Net Sharpe | **0.553** | **0.563** |
+| Net CAGR | 2.48% | 2.63% |
+| Maximum drawdown | -6.56% | -10.53% |
+| Long net expectancy | +2.64% | +2.71% |
+| Short net expectancy | -0.09% | +0.01% |
+| SPY R-squared | 18.65% | 37.49% |
+
+The headline portfolio metrics improved substantially from v24, but the conditional-short
+hypothesis failed. Risk-off short expectancy and Sharpe were negative in both windows. In reused
+development the optimizer allocated only 0.000002% average short gross during risk-off sessions, so
+the result is economically a regime-controlled long portfolio rather than evidence of short alpha.
+The 2022 return deteriorated from -0.41% in v24 to -3.07% in v25; 2023 improved from -3.88% to
++1.42%, again through the long book. Temporary name-cap excess under the ADV constraint also failed
+the operational gate. Orders remain disabled.
+
+- [Frozen v25 protocol](docs/MULTI_ASSET_PROTOCOL_V25.md)
+- [v25 report](reports/cross_asset_v25/REPORT.md)
+- [v25 machine-readable decision](reports/cross_asset_v25/SUMMARY.json)
+- [Conditional long/short diagnostics](reports/cross_asset_v25/conditional_book_metrics.csv)
+- [v24 versus v25 comparison](reports/cross_asset_v25/v24_v25_comparison.csv)
+- [v25 evaluator](scripts/evaluate_cross_asset_v25.py)
+
+## v24 dynamic symmetric TSMOM: rejected
 
 v24 tested one frozen, mathematically symmetric long/short design: prior-window rolling z-scores,
 a causal 70th-percentile dynamic threshold, standardized moving-average-gap confirmation,
