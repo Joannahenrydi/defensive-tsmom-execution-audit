@@ -24,6 +24,7 @@ class RiskBudgetConfig:
     annual_volatility_cap: float = 0.10
     net_cap: float = 0.35
     max_short_gross: float | None = None
+    liquidity_limited_cap_reduction: bool = False
     nav: float = 100_000.0
     tolerance: float = 1e-7
     max_iterations: int = 500
@@ -165,6 +166,22 @@ def run_risk_budget_backtest(
                 config.max_name * scale
                 * name_scaler.loc[session, names].to_numpy(dtype=float)
             )
+            lower_name = -scaled_name.copy()
+            upper_name = scaled_name.copy()
+            if config.liquidity_limited_cap_reduction:
+                # When the desired cap falls faster than the ADV limit permits, execute the
+                # maximum feasible risk reduction and disclose the residual cap excess. This
+                # preserves the hard participation constraint rather than pretending an
+                # impossible liquidation occurred.
+                liquidity_floor = previous - capacity
+                liquidity_ceiling = previous + capacity
+                forced_long = liquidity_floor > upper_name
+                forced_short = liquidity_ceiling < lower_name
+                lower_name[forced_long] = liquidity_floor[forced_long]
+                upper_name[forced_long] = liquidity_floor[forced_long]
+                lower_name[forced_short] = liquidity_ceiling[forced_short]
+                upper_name[forced_short] = liquidity_ceiling[forced_short]
+            holding_bound = np.maximum(np.abs(lower_name), np.abs(upper_name))
             required_reduction = [max(0.0, np.abs(previous).sum() - max(available_gross, 0))]
             required_reduction.append(
                 max(0.0, abs(previous.sum() + fixed_net) - config.net_cap * scale)
@@ -231,7 +248,7 @@ def run_risk_budget_backtest(
             def volatility_jac(x, dimension=n, cov=covariance):
                 return np.r_[-2 * cov @ x[:dimension], np.zeros(2 * dimension)]
 
-            initial_weight = np.clip(previous, -scaled_name, scaled_name)
+            initial_weight = np.clip(previous, lower_name, upper_name)
             if config.max_short_gross is not None:
                 remaining_short = max(
                     0.0, config.max_short_gross * scale - fixed_short_gross
@@ -243,8 +260,8 @@ def run_risk_budget_backtest(
             initial_trade = np.abs(initial_weight - previous)
             initial = np.r_[initial_weight, np.abs(initial_weight), initial_trade]
             bounds = Bounds(
-                np.r_[-scaled_name, np.zeros(2 * n)],
-                np.r_[scaled_name, scaled_name, capacity],
+                np.r_[lower_name, np.zeros(2 * n)],
+                np.r_[upper_name, holding_bound, capacity],
             )
             result = minimize(
                 objective, initial, jac=objective_jac, method="SLSQP", bounds=bounds,
@@ -255,6 +272,26 @@ def run_risk_budget_backtest(
             independently_feasible = _is_feasible_candidate(
                 result, bounds, linear, volatility_constraint, config.tolerance
             )
+            # Abrupt per-name cap reductions can leave SLSQP at a singular corner near the
+            # drifted holdings even though cash is feasible. Retry from exact cash only when
+            # that point independently satisfies every linear, capacity and volatility bound.
+            if not result.success and not independently_feasible:
+                cash_initial = np.r_[np.zeros(2 * n), np.abs(previous)]
+                cash_seed = type("FeasibleSeed", (), {"x": cash_initial})()
+                if _is_feasible_candidate(
+                    cash_seed, bounds, linear, volatility_constraint, config.tolerance
+                ):
+                    result = minimize(
+                        objective, cash_initial, jac=objective_jac, method="SLSQP",
+                        bounds=bounds,
+                        constraints=[linear, {"type": "ineq", "fun": volatility_constraint,
+                                              "jac": volatility_jac}],
+                        options={"maxiter": config.max_iterations, "ftol": 1e-9,
+                                 "disp": False},
+                    )
+                    independently_feasible = _is_feasible_candidate(
+                        result, bounds, linear, volatility_constraint, config.tolerance
+                    )
             if not result.success and not independently_feasible:
                 return CrossAssetResult(pd.DataFrame(records).set_index("session"), pd.DataFrame(weights),
                                         pd.DataFrame(rebalances), "INVALID",
@@ -272,6 +309,9 @@ def run_risk_budget_backtest(
             factor_exposure = factor_loadings.T @ target
             sleeve_gross = target.abs().groupby(asset_sleeves).sum()
             short_gross = float(target.clip(upper=0).abs().sum())
+            name_cap_excess = float(
+                np.maximum(np.abs(target.loc[names].to_numpy()) - scaled_name, 0).max()
+            )
             short_budget_ratio = (
                 short_gross / (config.max_short_gross * scale)
                 if config.max_short_gross not in (None, 0)
@@ -281,6 +321,7 @@ def run_risk_budget_backtest(
                                "gross": float(target.abs().sum()), "net": float(target.sum()),
                                "short_gross": short_gross,
                                "short_gross_budget_ratio": short_budget_ratio,
+                               "maximum_name_cap_excess": name_cap_excess,
                                "turnover": pending_turnover,
                                "turnover_limit": turnover_limit,
                                "forecast_volatility": float(

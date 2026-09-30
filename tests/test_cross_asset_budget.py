@@ -145,3 +145,51 @@ def test_name_scaler_validation_rejects_noncausal_ranges():
             pd.Series("all", index=columns), pd.Series({"all": 1.0}),
             name_scaler=invalid,
         )
+
+
+def test_abrupt_name_cap_reduction_uses_feasible_cash_retry():
+    rng = np.random.default_rng(46)
+    index = pd.bdate_range("2018-01-02", periods=150)
+    columns = [f"A{i}" for i in range(12)]
+    returns = pd.DataFrame(rng.normal(0, .004, (150, 12)), index=index, columns=columns)
+    alpha = pd.DataFrame(.003, index=index, columns=columns)
+    adv = pd.DataFrame(100_000_000.0, index=index, columns=columns)
+    factors = pd.DataFrame({"factor": [1, -1] * 6}, index=columns)
+    sleeves = pd.Series(["all"] * 12, index=columns)
+    scaler = pd.DataFrame(1.0, index=index, columns=columns)
+    scaler.loc[index[100]:, :] = 0.0
+    result = run_risk_budget_backtest(
+        alpha, returns, adv, pd.DataFrame(True, index=index, columns=columns),
+        factors, pd.Series({"factor": 1.0}), sleeves, pd.Series({"all": 1.0}),
+        name_scaler=scaler,
+        config=RiskBudgetConfig(covariance_window=60, rebalance_every=5, net_cap=1.0),
+    )
+    assert result.status == "COMPLETED"
+    assert result.rebalances.loc[index[100]:, "gross"].max() <= 1e-8
+
+
+def test_liquidity_limited_cap_reduction_is_executed_and_disclosed():
+    rng = np.random.default_rng(47)
+    index = pd.bdate_range("2018-01-02", periods=170)
+    columns = [f"A{i}" for i in range(12)]
+    returns = pd.DataFrame(rng.normal(0, .003, (170, 12)), index=index, columns=columns)
+    alpha = pd.DataFrame(.003, index=index, columns=columns)
+    adv = pd.DataFrame(3_000_000.0, index=index, columns=columns)
+    factors = pd.DataFrame({"factor": [1, -1] * 6}, index=columns)
+    sleeves = pd.Series(["all"] * 12, index=columns)
+    scaler = pd.DataFrame(1.0, index=index, columns=columns)
+    scaler.loc[index[110]:, :] = 0.0
+    result = run_risk_budget_backtest(
+        alpha, returns, adv, pd.DataFrame(True, index=index, columns=columns),
+        factors, pd.Series({"factor": 1.0}), sleeves, pd.Series({"all": 1.0}),
+        name_scaler=scaler,
+        config=RiskBudgetConfig(
+            covariance_window=60, rebalance_every=5, net_cap=1.0,
+            liquidity_limited_cap_reduction=True,
+        ),
+    )
+    assert result.status == "COMPLETED"
+    after_cut = result.rebalances.loc[index[110]:]
+    assert after_cut["maximum_name_cap_excess"].max() > 0
+    assert after_cut.iloc[-1]["maximum_name_cap_excess"] <= 1e-8
+    assert after_cut.iloc[-1]["gross"] <= 1e-8

@@ -186,6 +186,7 @@ def run_candidate(
         annual_volatility_cap=0.08,
         net_cap=0.60,
         max_short_gross=candidate.short_gross_cap,
+        liquidity_limited_cap_reduction=True,
     )
     return run_risk_budget_backtest(
         delayed_score,
@@ -248,6 +249,8 @@ def candidate_diagnostics(
         maximum_short_gross_budget_ratio=float(
             rebalances["short_gross_budget_ratio"].max()
         ),
+        maximum_name_cap_excess=float(rebalances["maximum_name_cap_excess"].max()),
+        maximum_gross_budget_ratio=float(rebalances["gross"].max()),
     )
     return metrics
 
@@ -346,6 +349,8 @@ def operational_pass(metrics: dict) -> bool:
         metrics.get("status") == "COMPLETED"
         and metrics["annual_turnover"] <= 25
         and all(metrics[key] <= 1.0001 for key in keys)
+        and metrics["maximum_gross_budget_ratio"] <= 1.0001
+        and metrics["maximum_name_cap_excess"] <= 1e-6
     )
 
 
