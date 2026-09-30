@@ -303,6 +303,18 @@ def run_risk_budget_backtest(
             independently_feasible = _is_feasible_candidate(
                 result, bounds, linear, volatility_constraint, config.tolerance
             )
+            if not result.success and not independently_feasible:
+                hold_seed = OptimizeResult(
+                    x=np.r_[previous, np.abs(previous), np.zeros(n)],
+                    success=False,
+                    status=-2,
+                    message="independently verified fail-closed no-trade fallback",
+                )
+                if _is_feasible_candidate(
+                    hold_seed, bounds, linear, volatility_constraint, config.tolerance
+                ):
+                    result = hold_seed
+                    independently_feasible = True
             # Abrupt per-name cap reductions can leave SLSQP at a singular corner near the
             # drifted holdings even though cash is feasible. Retry from exact cash only when
             # that point independently satisfies every linear, capacity and volatility bound.
