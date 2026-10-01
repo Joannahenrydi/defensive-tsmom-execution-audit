@@ -5,7 +5,7 @@ import pandas as pd
 from scripts.report_valuein_v31 import build_report
 
 
-def test_report_preserves_blocked_data_decision(tmp_path) -> None:
+def test_report_preserves_blocked_data_decision(tmp_path, monkeypatch) -> None:
     processed = tmp_path / "processed"
     processed.mkdir()
     gate = {
@@ -27,20 +27,25 @@ def test_report_preserves_blocked_data_decision(tmp_path) -> None:
         "sectors_with_ten_covered_entities": 1,
     }
     (processed / "DATA_GATE.json").write_text(json.dumps(gate))
-    pd.DataFrame(
+    events = pd.DataFrame(
         {
             "availability_date": pd.to_datetime(["2021-01-01"]),
             "accession_id": ["A1"],
             "entity_id": [1],
             "restatement_flag": [False],
         }
-    ).to_parquet(processed / "fundamental_events.parquet")
-    pd.DataFrame(
+    )
+    membership = pd.DataFrame(
         {
             "date": pd.to_datetime(["2021-01-04"]),
             "cik": ["1"],
         }
-    ).to_parquet(processed / "sp500_membership_daily.parquet")
+    )
+
+    def read_parquet(path):
+        return events if path.name == "fundamental_events.parquet" else membership
+
+    monkeypatch.setattr(pd, "read_parquet", read_parquet)
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps({"plan": "sample"}))
     output = tmp_path / "report"
