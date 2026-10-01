@@ -1,0 +1,46 @@
+{
+  "status": "V27_A_REJECTED_FAMILY_ADMISSION",
+  "reason": "RESIDUAL_MEAN_REVERSION_FAILED_TRAIN_ONLY_GATE",
+  "track_a": {
+    "status": "V27_A_REJECTED_FAMILY_ADMISSION",
+    "admission": {
+      "passed": false,
+      "components": {
+        "trend_positive_slope": true,
+        "mean_reversion_positive_slope": false,
+        "mean_reversion_train_sharpe": false,
+        "mean_reversion_double_cost_train_sharpe": false,
+        "independent_score_correlation": true
+      },
+      "trend_status": "ADMITTED",
+      "trend_slope": 5.1513871248276005e-05,
+      "mean_reversion_status": "BLOCKED",
+      "mean_reversion_slope": -2.7516547400310317e-05,
+      "pooled_correlation": -0.004602604393627356,
+      "mean_daily_cross_sectional_correlation": -0.0017742777844590607,
+      "mean_reversion_observations": 90637,
+      "mean_reversion_predictive_correlation": -0.0033914963514805998,
+      "mean_reversion_directional_accuracy": 0.1389609100036409,
+      "mean_reversion_train_sharpe": null,
+      "mean_reversion_double_cost_train_sharpe": null
+    },
+    "development_portfolio_evaluated": false
+  },
+  "track_b": {
+    "status": "V27_B_BLOCKED_DATA",
+    "reason": "REQUIRED_CONTRACT_ARCHIVE_NOT_FOUND",
+    "missing_files": [
+      "data/futures/contracts_daily.parquet",
+      "data/futures/contracts_metadata.csv"
+    ],
+    "strategy_backtest_run": false,
+    "orders_allowed": false
+  },
+  "track_c": {
+    "status": "V27_C_NOT_RUN_CARRY_DATA_BLOCKED",
+    "portfolio_evaluated": false
+  },
+  "historical_gate_passed": false,
+  "prospective_validation_required": true,
+  "orders_allowed": false
+}

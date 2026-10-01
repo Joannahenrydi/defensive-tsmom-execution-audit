@@ -1,0 +1,10 @@
+{
+  "status": "V27_B_BLOCKED_DATA",
+  "reason": "REQUIRED_CONTRACT_ARCHIVE_NOT_FOUND",
+  "missing_files": [
+    "data/futures/contracts_daily.parquet",
+    "data/futures/contracts_metadata.csv"
+  ],
+  "strategy_backtest_run": false,
+  "orders_allowed": false
+}

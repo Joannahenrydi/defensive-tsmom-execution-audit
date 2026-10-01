@@ -229,9 +229,36 @@ def audit_carry_inputs(contracts: Path, metadata: Path) -> tuple[dict, pd.DataFr
     return result, roots
 
 
-def write_blocked_report(output: Path, summary: dict) -> None:
+def write_report(output: Path, summary: dict) -> None:
     admission = summary["track_a"]["admission"]
     carry = summary["track_b"]
+    mr_train = admission["mean_reversion_train_sharpe"]
+    mr_double = admission["mean_reversion_double_cost_train_sharpe"]
+    mr_train_text = (
+        f"{mr_train:.3f}" if mr_train is not None else "not run (slope gate failed)"
+    )
+    mr_double_text = (
+        f"{mr_double:.3f}" if mr_double is not None else "not run (slope gate failed)"
+    )
+    if summary["track_a"]["development_portfolio_evaluated"]:
+        train = summary["track_a"]["train"]
+        development = summary["track_a"]["development"]
+        track_a_result = f"""
+## Track-A portfolio evidence
+
+| Segment | Net Sharpe | CAGR | Max drawdown | SPY R-squared |
+|---|---:|---:|---:|---:|
+| Train | {train['sharpe']:.3f} | {train['cagr']:.2%} | {train['max_drawdown']:.2%} | {train['spy_r_squared']:.1%} |
+| Reused development | {development['sharpe']:.3f} | {development['cagr']:.2%} | {development['max_drawdown']:.2%} | {development['spy_r_squared']:.1%} |
+
+Track-A status: **{summary['track_a']['status']}**. The development window is reused evidence and
+cannot authorize live trading.
+"""
+    else:
+        track_a_result = """
+Track-A reused-development portfolio evaluated: **No**. A family that fails admission is not
+sign-flipped, blended or repaired.
+"""
     report = f"""# v27 Multi-Source Alpha Framework
 
 ## Decision
@@ -248,13 +275,13 @@ audited the contract-level futures inputs required for actual term-structure car
   **{admission['trend_slope']:.8f}**.
 - Residual-MR calibration: **{admission['mean_reversion_status']}**; slope
   **{admission['mean_reversion_slope']:.8f}**.
+- Residual-MR five-session pooled correlation: **{admission['mean_reversion_predictive_correlation']:.4f}**
+  across **{admission['mean_reversion_observations']:,}** completed train labels.
 - Trend/MR pooled train correlation: **{admission['pooled_correlation']:.3f}**.
-- MR standalone train Sharpe: **{admission['mean_reversion_train_sharpe']:.3f}**.
-- MR frozen-trade 2x-cost train Sharpe:
-  **{admission['mean_reversion_double_cost_train_sharpe']:.3f}**.
+- MR standalone train Sharpe: **{mr_train_text}**.
+- MR frozen-trade 2x-cost train Sharpe: **{mr_double_text}**.
 
-Track-A reused-development portfolio evaluated: **No**. A family that fails admission is not
-sign-flipped, blended or repaired.
+{track_a_result}
 
 ## Track B — futures carry data gate
 
@@ -338,8 +365,23 @@ def main(source: Path, contracts: Path, metadata: Path, output: Path) -> None:
         "mean_daily_cross_sectional_correlation": float(
             correlation["mean_daily_cross_sectional_correlation"]
         ),
-        "mean_reversion_train_sharpe": float(mr_train_sharpe),
-        "mean_reversion_double_cost_train_sharpe": float(mr_double_train_sharpe),
+        "mean_reversion_observations": int(
+            calibrations["mean_reversion"]["observations"]
+        ),
+        "mean_reversion_predictive_correlation": float(
+            calibrations["mean_reversion"]["pooled_correlation"]
+        ),
+        "mean_reversion_directional_accuracy": float(
+            calibrations["mean_reversion"]["directional_accuracy"]
+        ),
+        "mean_reversion_train_sharpe": (
+            float(mr_train_sharpe) if np.isfinite(mr_train_sharpe) else None
+        ),
+        "mean_reversion_double_cost_train_sharpe": (
+            float(mr_double_train_sharpe)
+            if np.isfinite(mr_double_train_sharpe)
+            else None
+        ),
     }
 
     freeze = {
@@ -381,7 +423,7 @@ def main(source: Path, contracts: Path, metadata: Path, output: Path) -> None:
         (output / "SUMMARY.json").write_text(
             json.dumps(summary, indent=2, default=str) + "\n"
         )
-        write_blocked_report(output, summary)
+        write_report(output, summary)
         print(json.dumps(summary, indent=2, default=str))
         return
 
@@ -500,7 +542,7 @@ def main(source: Path, contracts: Path, metadata: Path, output: Path) -> None:
     (output / "SUMMARY.json").write_text(
         json.dumps(summary, indent=2, default=str) + "\n"
     )
-    write_blocked_report(output, summary)
+    write_report(output, summary)
     print(json.dumps(summary, indent=2, default=str))
 
 

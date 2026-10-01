@@ -1,0 +1,39 @@
+{
+  "protocol_sha256": "8d92ec4170159b154cf28fbe18f6d28069bd1bf9d16dc02519fb41e7fae27a27",
+  "source_sha256": "82347fef112a5f04dc2b5accf947f362eefe1a0a89f1c59bf143a369ab63e32e",
+  "costs": {
+    "commission_bps": 0,
+    "half_spread_bps": 1,
+    "slippage_bps": 1,
+    "impact_coefficient": 0.1,
+    "borrow_annual": 0.01,
+    "calendar_days": 7,
+    "multiplier": 1.0
+  },
+  "track_a_weights": {
+    "trend": 0.5714285714285714,
+    "mean_reversion": 0.42857142857142855
+  },
+  "family_calibrations": {
+    "trend": {
+      "status": "ADMITTED",
+      "reason": "OK",
+      "slope": 5.1513871248276005e-05,
+      "observations": 90637,
+      "pooled_correlation": 0.003326238164351807,
+      "directional_accuracy": 0.1151406158632788,
+      "digest": "fd015ea2c63e5ca7952585fb7c50d88d6ebd9f18fe5bdf7a9fe01410dab348e3"
+    },
+    "mean_reversion": {
+      "status": "BLOCKED",
+      "reason": "NONPOSITIVE_TRAIN_SLOPE",
+      "slope": -2.7516547400310317e-05,
+      "observations": 90637,
+      "pooled_correlation": -0.0033914963514805998,
+      "directional_accuracy": 0.1389609100036409,
+      "digest": "4f62dbd5d9a5b0ebfae042a9dec3e1a1e17b591b0c898871970fe41b753ff32c"
+    }
+  },
+  "reused_development": true,
+  "fresh_holdout_available": false
+}

@@ -1,6 +1,35 @@
 # Defensive TSMOM Research and Execution Audit
 
-## Current research status: v26 adaptive trend allocation rejected
+## Current research status: v27 multi-source alpha admission rejected and blocked
+
+v27 stopped changing trend construction and opened two independent research tracks. Track A added
+a causal 20-session residual mean-reversion family to the frozen trend family. Track B required
+expiry-specific futures curves for actual carry and prohibited ETF distributions or price-derived
+pseudo-yields as substitutes.
+
+| v27 train-only alpha admission | Trend | Residual mean reversion |
+|---|---:|---:|
+| Five-session slope | **+0.00005151** | **-0.00002752** |
+| Predictive correlation | +0.0033 | **-0.0034** |
+| Completed labels | 90,637 | 90,637 |
+| Admission | **ADMITTED** | **BLOCKED** |
+
+The two scores were independent in train—their pooled correlation was -0.0046—but independence is
+not predictive value. Residual mean reversion had a negative train slope and was rejected without
+reversing its sign, blending it with trend, or reading a reused-development portfolio result.
+Track B is `V27_B_BLOCKED_DATA` because the workspace lacks expiry-specific futures settlements and
+point-in-time contract metadata. Consequently, the 40/30/30 Trend + MR + Carry portfolio was not
+run. This is simultaneously an MR alpha rejection and a carry data block; orders remain disabled.
+
+- [Frozen v27 protocol](docs/MULTI_ASSET_PROTOCOL_V27.md)
+- [v27 report](reports/cross_asset_v27/REPORT.md)
+- [v27 machine-readable decision](reports/cross_asset_v27/SUMMARY.json)
+- [Train family calibration](reports/cross_asset_v27/train_family_calibration.csv)
+- [Train alpha correlation](reports/cross_asset_v27/train_alpha_correlation.csv)
+- [Futures carry data gate](reports/cross_asset_v27/track_b_carry_data_gate.json)
+- [v27 evaluator](scripts/evaluate_cross_asset_v27.py)
+
+## v26 adaptive trend allocation: rejected
 
 v26 tested the requested portfolio reframing without tuning on reused development evidence. It
 combined the frozen v24 dynamic trend signal with causal within-group relative strength, used cash
