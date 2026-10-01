@@ -1,0 +1,9 @@
+segment,group,gross_return_contribution
+train,growth,0.03425910936036927
+train,rates,0.022443487610331637
+train,real_assets,-0.03406721614938829
+train,fx,-0.02430139459212462
+development,growth,0.035334343137910444
+development,rates,0.04404489360386714
+development,real_assets,0.06697041605369244
+development,fx,0.0031362558735793834

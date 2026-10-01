@@ -1,6 +1,40 @@
 # Defensive TSMOM Research and Execution Audit
 
-## Current research status: v25 regime-aware TSMOM rejected
+## Current research status: v26 adaptive trend allocation rejected
+
+v26 tested the requested portfolio reframing without tuning on reused development evidence. It
+combined the frozen v24 dynamic trend signal with causal within-group relative strength, used cash
+instead of shorts in risk-on states, permitted half-strength shorts only in risk-off states, and
+targeted equal risk across growth, rates, real assets and FX.
+
+| v26 evidence | Train 2008–2016 | Reused development 2017–2024 |
+|---|---:|---:|
+| Net Sharpe | **-0.023** | **0.665** |
+| Net CAGR | **-0.09%** | **1.80%** |
+| Maximum drawdown | -6.25% | -6.03% |
+| Long net expectancy | -0.06% | +1.82% |
+| Short net expectancy | 0.00% | 0.00% |
+| SPY beta | 0.030 | 0.036 |
+| SPY R-squared | 6.36% | 5.69% |
+| Top-five contribution share | 41.32% | 47.55% |
+
+The development result improved and all four macro groups contributed positively, while equity
+beta dependence fell materially. The frozen candidate still fails: train evidence is negative,
+point-in-time group risk contributions miss their 10-percentage-point stability gate, and dynamic
+risk-budget cuts cannot always be completed immediately under the 0.10% ADV limit. Five rebalance
+events required the engine's disclosed maximum-liquidity emergency transition. The short book is
+economically absent, so the evidence supports a diversified defensive long allocation in one
+window rather than a stable long/short alpha. No parameters were changed after observing the
+result, and orders remain disabled.
+
+- [Frozen v26 protocol](docs/MULTI_ASSET_PROTOCOL_V26.md)
+- [v26 report](reports/cross_asset_v26/REPORT.md)
+- [v26 machine-readable decision](reports/cross_asset_v26/SUMMARY.json)
+- [v24-v26 comparison](reports/cross_asset_v26/v24_v25_v26_comparison.csv)
+- [Group risk-contribution audit](reports/cross_asset_v26/actual_group_risk_contributions.csv)
+- [v26 evaluator](scripts/evaluate_cross_asset_v26.py)
+
+## v25 regime-aware TSMOM: rejected
 
 v25 retained the complete v24 signal and changed only side treatment. The prespecified risk-off
 state required SPY below its 200-day average, negative 252-session return and 20-day volatility

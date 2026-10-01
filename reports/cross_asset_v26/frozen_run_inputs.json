@@ -1,0 +1,31 @@
+{
+  "protocol_sha256": "05267c00841386f68a66405418e1afc2b869825096eb33e7b60128a5d361c535",
+  "source_sha256": "82347fef112a5f04dc2b5accf947f362eefe1a0a89f1c59bf143a369ab63e32e",
+  "absolute_relative_blend": [
+    0.5,
+    0.5
+  ],
+  "risk_group_target": {
+    "growth": 0.25,
+    "rates": 0.25,
+    "real_assets": 0.25,
+    "fx": 0.25
+  },
+  "risk_group_weight_bounds": [
+    0.1,
+    0.4
+  ],
+  "risk_covariance_window": 60,
+  "v24_score_scale": 5.1513871248276005e-05,
+  "costs": {
+    "commission_bps": 0,
+    "half_spread_bps": 1,
+    "slippage_bps": 1,
+    "impact_coefficient": 0.1,
+    "borrow_annual": 0.01,
+    "calendar_days": 7,
+    "multiplier": 1.0
+  },
+  "reused_development": true,
+  "fresh_holdout_available": false
+}

@@ -42,6 +42,10 @@ EXPECTED_V24_SLOPE = 5.1513871248276005e-05
 DEVELOPMENT = (VALIDATION[0], TEST[1])
 RISK_GROUPS = ("growth", "rates", "real_assets", "fx")
 RISK_TARGET = 0.25
+PRIOR_REPORTS = {
+    "v24": Path("reports/cross_asset_v24"),
+    "v25": Path("reports/cross_asset_v25"),
+}
 
 
 def risk_group_map() -> pd.Series:
@@ -246,6 +250,7 @@ def actual_group_risk_contributions(
     returns: pd.DataFrame,
     groups: pd.Series,
     target: pd.DataFrame,
+    budgets: pd.DataFrame,
 ) -> pd.DataFrame:
     """Estimate causal ex-ante group risk contributions of actual post-trade holdings."""
     rows = []
@@ -268,10 +273,56 @@ def actual_group_risk_contributions(
                     "group": group,
                     "actual_risk_contribution": float(asset_share[mask].sum()),
                     "target_proxy_risk_contribution": float(target.loc[session, group]),
-                    "gross_budget": np.nan,
+                    "gross_budget": float(budgets.loc[session, group]),
                 }
             )
     return pd.DataFrame(rows)
+
+
+def load_version_comparison(summary: dict) -> pd.DataFrame:
+    """Compare frozen v24-v26 evidence without rerunning prior specifications."""
+    summaries = {}
+    for version, path in PRIOR_REPORTS.items():
+        summaries[version] = json.loads((path / "SUMMARY.json").read_text())
+    summaries["v26"] = summary
+    metrics = (
+        "sharpe",
+        "cagr",
+        "max_drawdown",
+        "annual_turnover",
+        "long_net_expectancy",
+        "short_net_expectancy",
+        "spy_beta",
+        "spy_r_squared",
+        "top_5_absolute_contribution_share",
+    )
+    rows = []
+    for version, version_summary in summaries.items():
+        for segment in ("train", "development"):
+            row = {"version": version, "segment": segment}
+            row.update(
+                {
+                    metric: version_summary[segment].get(metric, np.nan)
+                    for metric in metrics
+                }
+            )
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def load_year_comparison(current_yearly: pd.DataFrame) -> pd.DataFrame:
+    """Assemble frozen yearly attribution for v24-v26."""
+    frames = []
+    for version, path in PRIOR_REPORTS.items():
+        frame = pd.read_csv(path / "yearly.csv")
+        frame.insert(0, "version", version)
+        frames.append(frame)
+    current = current_yearly.copy()
+    if "year" not in current.columns:
+        current = current.reset_index().rename(columns={current.index.name or "index": "year"})
+    current.insert(0, "version", "v26")
+    frames.append(current)
+    return pd.concat(frames, ignore_index=True)
 
 
 def group_contribution_table(
@@ -315,6 +366,10 @@ gross budgets target equal ex-ante proxy risk contribution.
 | SPY beta | {train['spy_beta']:.3f} | {development['spy_beta']:.3f} |
 | SPY R-squared | {train['spy_r_squared']:.1%} | {development['spy_r_squared']:.1%} |
 
+v26 improves reused-development risk-adjusted performance relative to v25 while reducing SPY
+dependence, but it has no positive train evidence. The frozen candidate therefore fails rather than
+being promoted from the reused 2017–2024 window.
+
 ## Risk-allocation audit
 
 - Development mean absolute actual group risk-contribution deviation from 25%:
@@ -322,7 +377,27 @@ gross budgets target equal ex-ante proxy risk contribution.
 - Largest development mean group risk-contribution share:
   **{summary['risk_contribution']['development_maximum_mean_group_share']:.2%}**.
 - Positive development risk groups: **{summary['positive_development_groups']} / 4**.
+- Emergency liquidity overrides: **{summary['operational']['train_emergency_overrides']}** in train
+  and **{summary['operational']['development_emergency_overrides']}** in development.
+- Maximum development group-cap ratio: **{summary['development']['maximum_sleeve_budget_ratio']:.2f}x**;
+  maximum name-cap excess: **{summary['development']['maximum_name_cap_excess']:.2%}**.
 - Failed gate components: **{', '.join(failed) if failed else 'None'}**.
+
+The mean group risk shares are close to 25% in aggregate, but the mean absolute deviation at each
+rebalance is **{summary['risk_contribution']['development_mean_absolute_deviation']:.2%}**. That
+distinction matters: average allocations conceal unstable point-in-time risk contributions.
+
+## 2022 and 2023
+
+| Version | 2022 net return | 2023 net return |
+|---|---:|---:|
+| v24 dynamic symmetric | {summary['year_comparison']['v24']['2022']:.2%} | {summary['year_comparison']['v24']['2023']:.2%} |
+| v25 regime-aware | {summary['year_comparison']['v25']['2022']:.2%} | {summary['year_comparison']['v25']['2023']:.2%} |
+| v26 adaptive allocation | {summary['year_comparison']['v26']['2022']:.2%} | {summary['year_comparison']['v26']['2023']:.2%} |
+
+v26 remains effectively long-only: development short expectancy is
+**{development['short_net_expectancy']:.2%}**. The improvement comes from long allocation and lower
+equity-beta concentration, not from discovering an independent short alpha.
 
 The 2017–2024 window is reused development evidence. This result cannot validate the model or
 authorize orders. Relative strength and risk allocation are assessed together under the frozen v26
@@ -387,6 +462,7 @@ def main(source: Path, output: Path) -> None:
         data["returns"],
         features["groups"],
         features["target_group_risk_contributions"],
+        features["group_budgets"],
     )
     group_contribution = group_contribution_table(
         result, data, features["groups"]
@@ -424,6 +500,35 @@ def main(source: Path, output: Path) -> None:
         "development_operational": operational_pass(development),
     }
     passed = all(gate_components.values())
+    yearly = tables["yearly"]
+    comparison = load_version_comparison(
+        {"train": train, "development": development}
+    )
+    year_comparison = load_year_comparison(yearly)
+    year_lookup = {
+        version: {
+            str(year): float(
+                year_comparison.loc[
+                    (year_comparison["version"].eq(version))
+                    & (year_comparison["year"].eq(year)),
+                    "net_return_compounded",
+                ].iloc[0]
+            )
+            for year in (2022, 2023)
+        }
+        for version in ("v24", "v25", "v26")
+    }
+    rebalance_sessions = pd.to_datetime(result.rebalances.index)
+    emergency = result.rebalances["emergency_constraint_override"].astype(bool)
+    train_emergency = int(
+        emergency.loc[(rebalance_sessions >= TRAIN[0]) & (rebalance_sessions <= TRAIN[1])].sum()
+    )
+    development_emergency = int(
+        emergency.loc[
+            (rebalance_sessions >= DEVELOPMENT[0])
+            & (rebalance_sessions <= DEVELOPMENT[1])
+        ].sum()
+    )
     summary = {
         "status": (
             "V26_HISTORICAL_GATE_PASS_PROSPECTIVE_REQUIRED"
@@ -442,6 +547,11 @@ def main(source: Path, output: Path) -> None:
                 key: float(value) for key, value in mean_group_rc.items()
             },
         },
+        "operational": {
+            "train_emergency_overrides": train_emergency,
+            "development_emergency_overrides": development_emergency,
+        },
+        "year_comparison": year_lookup,
         "robustness_sharpe": {
             name: float(robust.loc[name, "sharpe"])
             for name in (
@@ -479,6 +589,8 @@ def main(source: Path, output: Path) -> None:
     risk_contribution.to_csv(output / "actual_group_risk_contributions.csv", index=False)
     group_contribution.to_csv(output / "group_return_contributions.csv", index=False)
     robustness.to_csv(output / "robustness.csv", index=False)
+    comparison.to_csv(output / "v24_v25_v26_comparison.csv", index=False)
+    year_comparison.to_csv(output / "v24_v25_v26_yearly.csv", index=False)
     for name, table in tables.items():
         table.to_csv(output / f"{name}.csv", index=name == "book_daily")
     (output / "SUMMARY.json").write_text(

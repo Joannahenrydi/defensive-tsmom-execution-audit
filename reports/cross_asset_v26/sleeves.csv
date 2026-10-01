@@ -1,0 +1,13 @@
+segment,sleeve,gross_return_contribution
+train,commodity,-0.02503627175023105
+train,credit,0.039317912897542336
+train,equity,-0.005058803537173069
+train,metals,-0.009030944399157234
+train,rates,0.022443487610331637
+train,usd,-0.02430139459212462
+development,commodity,0.024981840749063094
+development,credit,0.01169907708171055
+development,equity,0.023635266056199887
+development,metals,0.04198857530462933
+development,rates,0.04404489360386714
+development,usd,0.0031362558735793834
