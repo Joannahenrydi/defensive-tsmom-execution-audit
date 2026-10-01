@@ -191,6 +191,31 @@ def test_side_specific_scalers_modify_long_and_short_caps():
     assert result.rebalances["short_gross_budget_ratio"].max() <= 1.0001
 
 
+def test_dynamic_sleeve_caps_are_enforced_by_session():
+    rng = np.random.default_rng(453)
+    index = pd.bdate_range("2018-01-02", periods=150)
+    columns = [f"A{i}" for i in range(12)]
+    returns = pd.DataFrame(rng.normal(0, .004, (150, 12)), index=index, columns=columns)
+    alpha = pd.DataFrame(.004, index=index, columns=columns)
+    adv = pd.DataFrame(100_000_000.0, index=index, columns=columns)
+    factors = pd.DataFrame({"factor": [1, -1] * 6}, index=columns)
+    sleeves = pd.Series(["left"] * 6 + ["right"] * 6, index=columns)
+    caps = pd.DataFrame({"left": .30, "right": .20}, index=index)
+    result = run_risk_budget_backtest(
+        alpha,
+        returns,
+        adv,
+        pd.DataFrame(True, index=index, columns=columns),
+        factors,
+        pd.Series({"factor": 1.0}),
+        sleeves,
+        caps,
+        config=RiskBudgetConfig(covariance_window=60, net_cap=1.0),
+    )
+    assert result.status == "COMPLETED"
+    assert result.rebalances["maximum_sleeve_budget_ratio"].max() <= 1.0001
+
+
 def test_name_scaler_validation_rejects_noncausal_ranges():
     index = pd.bdate_range("2018-01-02", periods=20)
     columns = [f"A{i}" for i in range(8)]

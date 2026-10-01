@@ -55,7 +55,7 @@ def run_risk_budget_backtest(
     factor_loadings: pd.DataFrame,
     factor_caps: pd.Series,
     asset_sleeves: pd.Series,
-    sleeve_caps: pd.Series,
+    sleeve_caps: pd.Series | pd.DataFrame,
     *,
     risk_scaler: pd.Series | None = None,
     long_gross_scaler: pd.Series | None = None,
@@ -75,6 +75,20 @@ def run_risk_budget_backtest(
         raise ValueError("wide inputs must align")
     if not factor_loadings.index.equals(columns) or not asset_sleeves.index.equals(columns):
         raise ValueError("risk metadata must align")
+    required_sleeves = pd.Index(asset_sleeves.unique())
+    if isinstance(sleeve_caps, pd.DataFrame):
+        if not sleeve_caps.index.equals(returns.index) or not required_sleeves.isin(
+            sleeve_caps.columns
+        ).all():
+            raise ValueError("dynamic sleeve caps must align to sessions and sleeves")
+        sleeve_cap_values = sleeve_caps.loc[:, required_sleeves]
+    else:
+        if not required_sleeves.isin(sleeve_caps.index).all():
+            raise ValueError("sleeve caps must cover every sleeve")
+        sleeve_cap_values = sleeve_caps.loc[required_sleeves]
+    sleeve_cap_array = sleeve_cap_values.to_numpy(dtype=float)
+    if not np.isfinite(sleeve_cap_array).all() or (sleeve_cap_array < 0).any():
+        raise ValueError("sleeve caps must be finite and nonnegative")
     if risk_scaler is None:
         risk_scaler = pd.Series(1.0, index=returns.index)
     if not risk_scaler.index.equals(returns.index) or risk_scaler.isna().any():
@@ -148,6 +162,11 @@ def run_risk_budget_backtest(
                 config.max_short_gross * scale * short_scale
                 if config.max_short_gross is not None
                 else None
+            )
+            session_sleeve_caps = (
+                sleeve_caps.loc[session]
+                if isinstance(sleeve_caps, pd.DataFrame)
+                else sleeve_caps
             )
             usable = eligibility.loc[session] & expected_return.loc[session].notna() & adv.loc[session].gt(0)
             names = columns[usable]
@@ -242,7 +261,7 @@ def run_risk_budget_backtest(
                 total_exposure = vector @ previous + float(fixed_factor_exposure[factor])
                 excess = max(0.0, abs(total_exposure) - float(factor_caps[factor]) * scale)
                 required_reduction.append(excess / max(float(np.abs(vector).max()), 1e-12))
-            for sleeve, cap in sleeve_caps.items():
+            for sleeve, cap in session_sleeve_caps.items():
                 mask = sleeves.eq(sleeve).to_numpy()
                 required_reduction.append(
                     max(0.0, np.abs(previous[mask]).sum()
@@ -279,7 +298,7 @@ def run_risk_budget_backtest(
                 post_cap_corrections.append(
                     excess / max(float(np.abs(vector).max()), 1e-12)
                 )
-            for sleeve, cap in sleeve_caps.items():
+            for sleeve, cap in session_sleeve_caps.items():
                 mask = sleeves.eq(sleeve).to_numpy()
                 post_cap_corrections.append(
                     max(0.0, np.abs(cap_target[mask]).sum()
@@ -314,7 +333,7 @@ def run_risk_budget_backtest(
                 fixed_exposure = float(fixed_factor_exposure[factor])
                 add(np.r_[vector, np.zeros(2 * n)], cap - fixed_exposure)
                 add(np.r_[-vector, np.zeros(2 * n)], cap + fixed_exposure)
-            for sleeve, cap in sleeve_caps.items():
+            for sleeve, cap in session_sleeve_caps.items():
                 mask = sleeves.eq(sleeve).to_numpy(dtype=float)
                 remaining = float(cap) * scale - float(fixed_sleeve_gross.get(sleeve, 0))
                 add(np.r_[np.zeros(n), mask, np.zeros(n)], remaining)
@@ -496,7 +515,7 @@ def run_risk_budget_backtest(
                                    (factor_exposure.abs() / (factor_caps * scale)).max()
                                ),
                                "maximum_sleeve_budget_ratio": float(
-                                   (sleeve_gross / (sleeve_caps * scale)).max()
+                                   (sleeve_gross / (session_sleeve_caps * scale)).max()
                                ),
                                **{f"exposure_{key}": float(value) for key, value in factor_exposure.items()}})
         last_session = session
