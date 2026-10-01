@@ -1,0 +1,6 @@
+gate,passed
+membership_session_coverage,True
+one_train_event,True
+three_train_events,False
+sector_depth,True
+unique_entity_availability,True

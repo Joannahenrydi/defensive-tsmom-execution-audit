@@ -27,9 +27,9 @@ these inputs.
 
 ## v31
 
-- Source gate: `reports/equity_v29_data_gate/DATA_GATE.json`
-- Source status: `V29_BLOCKED_SEC_DATA_QUALITY`
-- As-reported event file present: `False`
+- Source gate: `data/processed/valuein_v31/DATA_GATE.json`
+- Source status: `V31_BLOCKED_PIT_DATA`
+- As-reported event file present: `True`
 
 Latest-restatement fundamentals remain inadmissible. Only SEC accession/filed facts or a licensed
 as-reported vintage such as SF1 `ARY` can unblock the alpha gate.

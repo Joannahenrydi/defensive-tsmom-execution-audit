@@ -1,0 +1,8 @@
+{
+  "status": "V32_NOT_RUN_COMPONENT_BLOCKED",
+  "v30_status": "V30_BLOCKED_FUTURES_DATA",
+  "v31_status": "V31_BLOCKED_PIT_DATA",
+  "integration_evaluation_allowed": false,
+  "protocol_sha256": "77e5d2be536a677f0f042bb8d26b764032c81bed3f09c4f83c8d0308d61b2180",
+  "orders_allowed": false
+}

@@ -1,0 +1,9 @@
+{
+  "status": "V31_BLOCKED_PIT_DATA",
+  "source_gate": "data/processed/valuein_v31/DATA_GATE.json",
+  "source_status": "V31_BLOCKED_PIT_DATA",
+  "events_present": true,
+  "alpha_evaluation_allowed": false,
+  "protocol_sha256": "8971247f53c25224df278eb659f30da1a1d7cba8ac920954b7dfd82f5b557aa5",
+  "orders_allowed": false
+}

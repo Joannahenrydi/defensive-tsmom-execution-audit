@@ -41,12 +41,15 @@ PnL instruments and cannot be used to infer curve carry.
 The primary source remains SEC Company Facts with accession and filing date on every fact. A
 licensed alternative is admissible only when it retains an as-reported vintage. Sharadar SF1 is
 supported through annual `ARY` observations because that dimension is documented as
-point-in-time/as-reported and keyed by `datekey`.
+point-in-time/as-reported and keyed by `datekey`. Valuein is supported when each fact retains
+`accession_id`, `accepted_at` and `value_as_filed`; `index_membership` and the security valid-date
+history are required to reconstruct the daily S&P 500 universe.
 
-Required fields are ticker, dimension, datekey, reportperiod, assets, revenue, gross profit, net
-income and operating cash flow. `datekey` is treated as the filing date, and the signal becomes
-available one U.S. business day later. The importer preserves every distinct datekey; it does not
-replace an original filing with the latest restatement.
+For Sharadar, required fields are ticker, dimension, datekey, reportperiod, assets, revenue, gross
+profit, net income and operating cash flow. `datekey` is treated as the filing date. For Valuein,
+required fields are entity ID, accession ID, accepted timestamp, reporting period, standard
+concept, `value_as_filed`, security valid dates and historical index effective/removal dates. Both
+pipelines delay availability by one U.S. business day and preserve later amendments as new events.
 
 The following are not admissible:
 
@@ -60,7 +63,8 @@ provider may unblock the data gate but does not receive a lower alpha threshold.
 
 ## Credentials and cost control
 
-API credentials are read only from `DATABENTO_API_KEY` or `NASDAQ_DATA_LINK_API_KEY`. They must
+API credentials are read only from `DATABENTO_API_KEY`, `NASDAQ_DATA_LINK_API_KEY` or
+`VALUEIN_TOKEN`. They must
 never be passed on the command line, written into manifests, committed or printed. Before a paid
 historical request, obtain a provider cost estimate outside the research evaluator and cap the
 requested roots and dates to this frozen universe. Acquiring data never authorizes an order.
@@ -78,9 +82,23 @@ python -m scripts.collect_databento_futures normalize \
 estimate exceeds the explicit reviewed cap. The API key is read from the environment and never
 included in the output manifest.
 
+The Valuein pipeline can be exercised on the public sample without credentials:
+
+```bash
+python -m scripts.collect_valuein_v31 download --plan sample
+python -m scripts.collect_valuein_v31 normalize \
+  --snapshot-dir data/raw/valuein/SNAPSHOT_NAME
+```
+
+Formal v31 admission requires a snapshot covering the complete frozen train interval. For an
+authenticated plan, configure `VALUEIN_TOKEN` in the local environment and replace `sample` with
+`sp500`, `pro` or `full`. The downloader records snapshot, ETag, request ID, byte count and SHA-256,
+but never the token.
+
 ## Provider references
 
 - https://databento.com/docs/examples/futures/retrieving-oi-and-settlement-prices
 - https://databento.com/docs/schemas-and-data-formats/instrument-definitions
 - https://data.nasdaq.com/databases/SF1/documentation
 - https://www.sec.gov/search-filings/edgar-application-programming-interfaces
+- https://data.valuein.biz/v1/sample/manifest

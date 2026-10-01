@@ -14,14 +14,17 @@ cross-asset trend sleeve. Signals from different instruments are not rank-averag
 
 ## Point-in-time data gate
 
-Use SEC accession/filed facts or Sharadar SF1 `ARY` observations. Each filing becomes available one
-U.S. business day after its filing date. Amendments are new vintages and never overwrite the
-earlier state. `MRY`, `MRQ`, fiscal-period-only timestamps and latest-restatement exports are
-prohibited. A signal expires 400 calendar days after its source filing.
+Use SEC accession/filed facts, Sharadar SF1 `ARY`, or Valuein facts carrying accession ID,
+`accepted_at` and `value_as_filed`. Each filing becomes available one U.S. business day after its
+acceptance timestamp. Amendments are new vintages and never overwrite the earlier state. `MRY`,
+`MRQ`, fiscal-period-only timestamps, `value_current` and latest-restatement exports are prohibited.
+A signal expires 400 calendar days after its source filing.
 
-The v29 coverage gate remains unchanged: 400 unique symbol mappings, 250 names with a train event,
-200 names with three train events, eight sectors with ten covered names, and no duplicate
-symbol/availability event.
+The equity universe is reconstructed from Valuein `index_membership.effective_date` and
+`removal_date`, joined to the ticker valid on that session. Current constituents are never
+backfilled. Require at least 400 index members on 95% of train sessions, 250 entities with a train
+event, 200 entities with three train events, eight sectors with ten covered entities, and no
+duplicate entity/availability event.
 
 ## Fundamental families
 

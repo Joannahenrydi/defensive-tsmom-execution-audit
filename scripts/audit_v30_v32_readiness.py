@@ -59,7 +59,10 @@ def fundamental_readiness(
             "orders_allowed": False,
         }
     gate = json.loads(gate_path.read_text())
-    admitted = gate.get("status") == "V29_DATA_ADMITTED_ALPHA_NOT_RUN"
+    admitted = gate.get("status") in {
+        "V29_DATA_ADMITTED_ALPHA_NOT_RUN",
+        "V31_VALUEIN_DATA_ADMITTED_ALPHA_NOT_RUN",
+    }
     events_present = preferred_events.exists()
     if not admitted or not events_present:
         status = "V31_BLOCKED_PIT_DATA"
@@ -155,6 +158,10 @@ def run(
     v32 = integration_readiness(v30, v31)
     result = {"v30": v30, "v31": v31, "v32": v32, "orders_allowed": False}
     (output / "SUMMARY.json").write_text(json.dumps(result, indent=2) + "\n")
+    (output / "v30_data_gate.json").write_text(json.dumps(v30, indent=2) + "\n")
+    (output / "v30_decision.json").write_text(json.dumps(v30, indent=2) + "\n")
+    (output / "v31_decision.json").write_text(json.dumps(v31, indent=2) + "\n")
+    (output / "v32_decision.json").write_text(json.dumps(v32, indent=2) + "\n")
     write_report(output, v30, v31, v32)
     return result
 
@@ -165,7 +172,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fundamental-gate",
         type=Path,
-        default=Path("data/raw/sf1_v29/DATA_GATE.json"),
+        default=Path("data/processed/valuein_v31/DATA_GATE.json"),
     )
     parser.add_argument(
         "--fallback-fundamental-gate",
@@ -175,7 +182,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fundamental-events",
         type=Path,
-        default=Path("data/raw/sf1_v29/annual_fundamental_events.csv.gz"),
+        default=Path("data/processed/valuein_v31/fundamental_events.parquet"),
     )
     parser.add_argument(
         "--output", type=Path, default=Path("reports/multisource_v30_v32_readiness")

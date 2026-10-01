@@ -1,0 +1,33 @@
+{
+  "status": "V31_BLOCKED_PIT_DATA",
+  "components": {
+    "membership_session_coverage": true,
+    "one_train_event": true,
+    "three_train_events": false,
+    "sector_depth": true,
+    "unique_entity_availability": true
+  },
+  "first_event": "2021-02-12 00:00:00",
+  "last_event": "2026-09-29 00:00:00",
+  "train_events": 829,
+  "entities_with_one_train_event": 657,
+  "entities_with_three_train_events": 2,
+  "train_membership_sessions": 1304,
+  "train_sessions_with_400_members": 1304,
+  "sectors_with_ten_covered_entities": 10,
+  "orders_allowed": false,
+  "source": "Valuein",
+  "snapshot": "snapshot_20261001",
+  "raw_hashes": {
+    "references": "e2fe71e4d89652c6d39bb3f1868dc8e2fed04717b0c1092e0297f6f644e18151",
+    "security": "8f6a23fb37eae3f5e92a613419b7618ebdc45d0250d2331c819419e4a0053054",
+    "filing": "016847bdecaa405d1be9e2ab963c6e46cc827cdc74747da5427d2ace852ac51a",
+    "fact": "eff9212700e0c94516d2f71c2a91acf13220693e935159348b86217dc07cc7b0",
+    "index_membership": "32de9a69bfeb10f1c6f0c390a5e6ed7490667dbf07bc76360479078c0067b4f5",
+    "standard_concept": "3db109f1c2c30d555722f14dd357aafb1fbd0d7e77fa1b419909a366d0cffb2b",
+    "ratio": "10114ac1ee69126cf68fd90875421762f9f6e130bc18acb00ca4ef4264756c3f"
+  },
+  "as_filed_value_used": true,
+  "accepted_at_used": true,
+  "historical_membership_used": true
+}

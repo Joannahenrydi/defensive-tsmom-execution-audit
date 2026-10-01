@@ -1,0 +1,16 @@
+{
+  "status": "V30_BLOCKED_FUTURES_DATA",
+  "missing_core_files": [
+    "data/futures/contracts_daily.parquet",
+    "data/futures/contracts_metadata.csv",
+    "data/futures/contracts_metadata_history.parquet"
+  ],
+  "missing_operational_files": [
+    "data/futures/root_cost_schedule.csv",
+    "data/futures/margins_daily.parquet"
+  ],
+  "alpha_diagnostics_allowed": false,
+  "portfolio_evaluation_allowed": false,
+  "protocol_sha256": "6d1a55469a8921caad947ca1aefffe6665ef0b0056e0d3f5e378149e6b115bd4",
+  "orders_allowed": false
+}

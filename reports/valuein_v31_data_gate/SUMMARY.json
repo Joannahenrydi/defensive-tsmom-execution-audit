@@ -1,0 +1,10 @@
+{
+  "status": "V31_BLOCKED_PIT_DATA",
+  "decision": "ALPHA_NOT_RUN",
+  "reason": "The public Valuein sample begins in 2021. Only two entities have three annual as-filed events inside the frozen 2018-2022 train window, versus the required 200.",
+  "snapshot": "snapshot_20261001",
+  "plan": "sample",
+  "events": 3351,
+  "membership_rows": 905722,
+  "orders_allowed": false
+}

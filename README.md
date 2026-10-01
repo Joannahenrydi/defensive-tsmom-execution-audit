@@ -17,12 +17,22 @@ The readiness audit is currently fail-closed: v30 lacks the contract archive, co
 margin history; v31 lacks an admitted as-reported filing event file; v32 therefore does not run. No
 alpha or portfolio result was generated from missing inputs, and orders remain disabled.
 
+The public Valuein `snapshot_20261001` sample has now been exercised end to end. Seven Parquet
+tables were downloaded with resumable byte-range validation and SHA-256 hashes. Normalization
+produced 3,351 annual as-filed events and 905,722 point-in-time S&P 500 membership rows. Acceptance
+timestamps, original filed values, amendments and historical ticker validity were preserved. The
+sample passes membership, single-event, sector and uniqueness checks, but begins in 2021: only two
+entities have three filings inside the frozen 2018–2022 train window, versus 200 required. v31 is
+therefore `V31_BLOCKED_PIT_DATA`; no IC or portfolio result was evaluated.
+
 - [v30 protocol](docs/MULTI_ASSET_PROTOCOL_V30.md)
 - [v31 protocol](docs/EQUITY_RESEARCH_PROTOCOL_V31.md)
 - [v32 protocol](docs/MULTI_ASSET_PROTOCOL_V32.md)
 - [v30–v32 readiness report](reports/multisource_v30_v32_readiness/REPORT.md)
 - [Futures curve engine](features/futures_curve.py)
 - [Point-in-time fundamental engine](features/fundamental_alpha.py)
+- [Valuein collector and normalizer](scripts/collect_valuein_v31.py)
+- [Valuein sample data-gate report](reports/valuein_v31_data_gate/REPORT.md)
 
 ## v29 filing-date fundamentals blocked at the data gate
 

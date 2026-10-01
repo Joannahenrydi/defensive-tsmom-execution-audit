@@ -17,11 +17,11 @@
   },
   "v31": {
     "status": "V31_BLOCKED_PIT_DATA",
-    "source_gate": "reports/equity_v29_data_gate/DATA_GATE.json",
-    "source_status": "V29_BLOCKED_SEC_DATA_QUALITY",
-    "events_present": false,
+    "source_gate": "data/processed/valuein_v31/DATA_GATE.json",
+    "source_status": "V31_BLOCKED_PIT_DATA",
+    "events_present": true,
     "alpha_evaluation_allowed": false,
-    "protocol_sha256": "f066c39f1a1daf88fc6060419334e49108cc5f023ac4e9d02ac2165f644cc8c4",
+    "protocol_sha256": "8971247f53c25224df278eb659f30da1a1d7cba8ac920954b7dfd82f5b557aa5",
     "orders_allowed": false
   },
   "v32": {
