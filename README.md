@@ -1,6 +1,30 @@
 # Defensive TSMOM Research and Execution Audit
 
-## Current research status: v29 filing-date fundamentals blocked at the data gate
+## Current research status: v30–v32 multi-source research frozen before acquisition
+
+The next three studies are now specified before licensed data is acquired:
+
+- **v30:** expiry-specific futures trend plus true curve carry;
+- **v31:** independently admitted futures trend plus a point-in-time fundamental equity sleeve;
+- **v32:** portfolio-level integration of admitted trend, carry and fundamental sleeves.
+
+The causal futures curve engine selects contracts before first notice or last trade, calculates
+carry from simultaneous front/next settlements and calculates roll-period returns on the same held
+contract. The fundamental engine expands only the latest filing available on each session, expires
+stale filings after 400 days and constructs sector-neutral quality and conservative-growth scores.
+
+The readiness audit is currently fail-closed: v30 lacks the contract archive, cost schedule and
+margin history; v31 lacks an admitted as-reported filing event file; v32 therefore does not run. No
+alpha or portfolio result was generated from missing inputs, and orders remain disabled.
+
+- [v30 protocol](docs/MULTI_ASSET_PROTOCOL_V30.md)
+- [v31 protocol](docs/EQUITY_RESEARCH_PROTOCOL_V31.md)
+- [v32 protocol](docs/MULTI_ASSET_PROTOCOL_V32.md)
+- [v30–v32 readiness report](reports/multisource_v30_v32_readiness/REPORT.md)
+- [Futures curve engine](features/futures_curve.py)
+- [Point-in-time fundamental engine](features/fundamental_alpha.py)
+
+## v29 filing-date fundamentals blocked at the data gate
 
 v29 froze a new accounting-information study after v27 and v28 showed that independent price
 transformations still lacked enough economic edge. The collector preserves accession number,

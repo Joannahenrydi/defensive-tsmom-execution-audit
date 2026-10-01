@@ -1,0 +1,36 @@
+{
+  "v30": {
+    "status": "V30_BLOCKED_FUTURES_DATA",
+    "missing_core_files": [
+      "data/futures/contracts_daily.parquet",
+      "data/futures/contracts_metadata.csv",
+      "data/futures/contracts_metadata_history.parquet"
+    ],
+    "missing_operational_files": [
+      "data/futures/root_cost_schedule.csv",
+      "data/futures/margins_daily.parquet"
+    ],
+    "alpha_diagnostics_allowed": false,
+    "portfolio_evaluation_allowed": false,
+    "protocol_sha256": "6d1a55469a8921caad947ca1aefffe6665ef0b0056e0d3f5e378149e6b115bd4",
+    "orders_allowed": false
+  },
+  "v31": {
+    "status": "V31_BLOCKED_PIT_DATA",
+    "source_gate": "reports/equity_v29_data_gate/DATA_GATE.json",
+    "source_status": "V29_BLOCKED_SEC_DATA_QUALITY",
+    "events_present": false,
+    "alpha_evaluation_allowed": false,
+    "protocol_sha256": "f066c39f1a1daf88fc6060419334e49108cc5f023ac4e9d02ac2165f644cc8c4",
+    "orders_allowed": false
+  },
+  "v32": {
+    "status": "V32_NOT_RUN_COMPONENT_BLOCKED",
+    "v30_status": "V30_BLOCKED_FUTURES_DATA",
+    "v31_status": "V31_BLOCKED_PIT_DATA",
+    "integration_evaluation_allowed": false,
+    "protocol_sha256": "77e5d2be536a677f0f042bb8d26b764032c81bed3f09c4f83c8d0308d61b2180",
+    "orders_allowed": false
+  },
+  "orders_allowed": false
+}
