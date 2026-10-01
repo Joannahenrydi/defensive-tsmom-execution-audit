@@ -23,6 +23,26 @@ alpha rejection; development was not read and orders remain disabled.
 - [Official SEC collector](scripts/collect_sec_fundamentals_v29.py)
 - [Fallback-source audit](scripts/audit_sec_source_v29.py)
 
+## Next research stage: licensed data onboarding
+
+Further price-only strategy variants are paused. The repository now contains fail-closed adapters
+for the two data sources that can materially change the information set:
+
+- expiry-specific CME futures through Databento `GLBX.MDP3`, using official settlement, cleared
+  volume, open interest and point-in-time instrument definitions; and
+- Sharadar SF1 annual `ARY` observations, which preserve an as-reported filing date rather than
+  replacing history with the latest restatement.
+
+The futures collector estimates provider charges before any billable download and refuses a
+download above an explicit reviewed dollar cap. Physically delivered futures also require an
+authoritative first-notice calendar; expiry is not used as a substitute. No Databento or Sharadar
+credential is configured in the current environment, so no paid request or new alpha evaluation
+has occurred.
+
+- [Frozen data-onboarding rules](docs/RESEARCH_DATA_ONBOARDING.md)
+- [Databento futures collector](scripts/collect_databento_futures.py)
+- [Sharadar SF1 importer](scripts/import_sharadar_sf1_v29.py)
+
 ## v28 OHLCV alpha admission: rejected
 
 v28 moved from close-to-close signals to three prespecified cross-asset OHLCV decompositions. All

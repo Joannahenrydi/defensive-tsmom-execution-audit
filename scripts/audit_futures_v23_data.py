@@ -37,7 +37,12 @@ def read_table(path: Path) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
-def audit_tables(daily: pd.DataFrame, metadata: pd.DataFrame) -> tuple[dict, pd.DataFrame]:
+def audit_tables(
+    daily: pd.DataFrame,
+    metadata: pd.DataFrame,
+    start: pd.Timestamp = START,
+    end: pd.Timestamp = END,
+) -> tuple[dict, pd.DataFrame]:
     problems: list[str] = []
     missing_daily = sorted(DAILY_COLUMNS - set(daily.columns))
     missing_metadata = sorted(METADATA_COLUMNS - set(metadata.columns))
@@ -90,10 +95,10 @@ def audit_tables(daily: pd.DataFrame, metadata: pd.DataFrame) -> tuple[dict, pd.
     if metadata[["expiry_date", "last_trade_date"]].isna().any().any():
         problems.append("missing expiry or last-trade date")
 
-    expected_sessions = len(pd.bdate_range(START, END))
+    expected_sessions = len(pd.bdate_range(start, end))
     root_rows = []
     for root, sleeve in ROOT_SLEEVES.items():
-        subset = daily.loc[daily["root"].eq(root) & daily["date"].between(START, END)]
+        subset = daily.loc[daily["root"].eq(root) & daily["date"].between(start, end)]
         observed_sessions = int(subset["date"].nunique())
         by_session = subset.groupby("date")["contract"].nunique()
         curve_share = float(by_session.ge(2).mean()) if len(by_session) else 0.0
@@ -111,8 +116,8 @@ def audit_tables(daily: pd.DataFrame, metadata: pd.DataFrame) -> tuple[dict, pd.
                     observed_sessions / expected_sessions >= 0.95
                     and curve_share >= 0.60
                     and not subset.empty
-                    and subset["date"].min() <= START
-                    and subset["date"].max() >= END
+                    and subset["date"].min() <= start
+                    and subset["date"].max() >= end
                 ),
             }
         )
