@@ -1,0 +1,41 @@
+{
+  "protocol_sha256": "840463a476c047dba0f4e9b9adcd69f817e78962242c5327db5ebabbf44b29d4",
+  "source_sha256": "82347fef112a5f04dc2b5accf947f362eefe1a0a89f1c59bf143a369ab63e32e",
+  "trend_weight": 0.6,
+  "ohlcv_weight": 0.4,
+  "family_calibrations": {
+    "overnight_gap_reversal": {
+      "status": "ADMITTED",
+      "reason": "OK",
+      "slope": 2.1603390407217737e-05,
+      "observations": 90637,
+      "pooled_correlation": 0.0022323440751892297,
+      "directional_accuracy": 0.13748248507783797,
+      "digest": "6c46185b5ea675b6ac9e4536bf0003a42ce306ad57f607292b13bc58d631ba45"
+    },
+    "intraday_reversal": {
+      "status": "ADMITTED",
+      "reason": "OK",
+      "slope": 2.1238030742471352e-05,
+      "observations": 90637,
+      "pooled_correlation": 0.0022689401336550364,
+      "directional_accuracy": 0.1364343480035747,
+      "digest": "7aaeda3bf530fa7b75fdcc803c0c19b5939cc02ee0b5ad5020f4e123c51301f8"
+    },
+    "volume_shock_reversal": {
+      "status": "ADMITTED",
+      "reason": "OK",
+      "slope": 1.1261312591741562e-05,
+      "observations": 90637,
+      "pooled_correlation": 0.0010477301016496477,
+      "directional_accuracy": 0.13484559285942826,
+      "digest": "4e6fa0c2b5c6f494d10b711111597c36a7a6b53523ad24bb3d19d4f207de64c7"
+    }
+  },
+  "statistically_admitted": [
+    "intraday_reversal",
+    "volume_shock_reversal"
+  ],
+  "portfolio_admitted": [],
+  "reused_development": true
+}

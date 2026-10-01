@@ -1,0 +1,42 @@
+{
+  "status": "V28_REJECTED_STANDALONE_TRAIN",
+  "reason": "NO_OHLCV_FAMILY_PASSED_FROZEN_TRAIN_ADMISSION",
+  "families": {
+    "overnight_gap_reversal": {
+      "slope": 2.1603390407217737e-05,
+      "mean_rank_ic": 0.0054852380371068,
+      "icir": 0.026378531578952664,
+      "positive_years": 6,
+      "observed_years": 8,
+      "decision": "REJECTED_ADMISSION_RANK_OR_DIVERSIFICATION_CAP"
+    },
+    "intraday_reversal": {
+      "slope": 2.1238030742471352e-05,
+      "mean_rank_ic": 0.006449892360397603,
+      "icir": 0.031332071520253885,
+      "positive_years": 6,
+      "observed_years": 8,
+      "decision": "REJECTED_STANDALONE_PORTFOLIO_GATE",
+      "standalone_train_sharpe": -0.05314773889854356,
+      "double_cost_train_sharpe": -0.07118848127295298
+    },
+    "volume_shock_reversal": {
+      "slope": 1.1261312591741562e-05,
+      "mean_rank_ic": 0.005480813176639497,
+      "icir": 0.027950432834677328,
+      "positive_years": 6,
+      "observed_years": 8,
+      "decision": "REJECTED_STANDALONE_PORTFOLIO_GATE",
+      "standalone_train_sharpe": null,
+      "double_cost_train_sharpe": null
+    }
+  },
+  "statistically_admitted": [
+    "intraday_reversal",
+    "volume_shock_reversal"
+  ],
+  "portfolio_admitted": [],
+  "development_portfolio_evaluated": false,
+  "historical_gate_passed": false,
+  "orders_allowed": false
+}

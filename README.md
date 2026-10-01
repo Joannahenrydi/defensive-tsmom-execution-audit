@@ -1,6 +1,31 @@
 # Defensive TSMOM Research and Execution Audit
 
-## Current research status: v27 multi-source alpha admission rejected and blocked
+## Current research status: v28 OHLCV alpha admission rejected
+
+v28 moved from close-to-close signals to three prespecified cross-asset OHLCV decompositions. All
+features used next-session execution, v26 risk-group residualization and causal rolling
+standardization. Two families passed the statistical screen, but neither survived standalone
+portfolio economics on train.
+
+| v28 train-only family | Five-day slope | Mean rank IC | ICIR | Portfolio result |
+|---|---:|---:|---:|---|
+| Overnight-gap reversal | +0.00002160 | +0.0055 | 0.0264 | Third by frozen admission rank |
+| Intraday reversal | +0.00002124 | +0.0064 | 0.0313 | Sharpe **-0.053**; 2x cost **-0.071** |
+| Volume-shock reversal | +0.00001126 | +0.0055 | 0.0280 | Optimizer selected cash |
+
+The positive rank ICs were too thin to clear costs and portfolio constraints. No family was
+sign-flipped or assigned a new window, and the reused 2017–2024 portfolio was not evaluated. The
+result rejects these three daily OHLCV families as additions to the trend portfolio; it does not
+claim that intraday execution data or event/fundamental information lacks alpha.
+
+- [Frozen v28 protocol](docs/MULTI_ASSET_PROTOCOL_V28.md)
+- [v28 report](reports/cross_asset_v28/REPORT.md)
+- [v28 machine-readable decision](reports/cross_asset_v28/SUMMARY.json)
+- [Train family qualification](reports/cross_asset_v28/train_family_qualification.csv)
+- [Standalone train portfolios](reports/cross_asset_v28/standalone_train_portfolios.csv)
+- [v28 evaluator](scripts/evaluate_cross_asset_v28.py)
+
+## v27 multi-source alpha admission: rejected and blocked
 
 v27 stopped changing trend construction and opened two independent research tracks. Track A added
 a causal 20-session residual mean-reversion family to the frozen trend family. Track B required

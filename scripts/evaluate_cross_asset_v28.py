@@ -215,6 +215,16 @@ def write_report(output: Path, summary: dict) -> None:
             f"{evidence['observed_years']} | {evidence['decision']} |"
         )
     table = "\n".join(rows)
+    standalone_rows = []
+    for family, evidence in summary["families"].items():
+        if "standalone_train_sharpe" not in evidence:
+            continue
+        sharpe = evidence["standalone_train_sharpe"]
+        doubled = evidence["double_cost_train_sharpe"]
+        sharpe_text = f"{sharpe:.3f}" if sharpe is not None else "cash / undefined"
+        doubled_text = f"{doubled:.3f}" if doubled is not None else "cash / undefined"
+        standalone_rows.append(f"| {family} | {sharpe_text} | {doubled_text} |")
+    standalone_table = "\n".join(standalone_rows) or "| None | n/a | n/a |"
     report = f"""# v28 Cross-Asset OHLCV Information Decomposition
 
 ## Decision
@@ -231,6 +241,14 @@ next session. Every feature was risk-group residualized and standardized with pr
 Statistically admitted families: **{', '.join(summary['statistically_admitted']) or 'none'}**.
 Portfolio-admitted families: **{', '.join(summary['portfolio_admitted']) or 'none'}**.
 Reused-development portfolio evaluated: **{summary['development_portfolio_evaluated']}**.
+
+| Train standalone family | Net Sharpe | Frozen-trade 2x-cost Sharpe |
+|---|---:|---:|
+{standalone_table}
+
+An undefined Sharpe denotes an all-cash optimizer result: after calibrated expected return and
+costs, the frozen objective found no trade with positive net value. It is a failed admission, not
+missing performance.
 
 No rejected feature was sign-flipped, assigned a different horizon or repaired after viewing its
 train statistics. Orders remain disabled.
@@ -302,8 +320,10 @@ def main(source: Path, output: Path) -> None:
     standalone_indexed = standalone.set_index("family") if not standalone.empty else standalone
     for family in FAMILIES:
         row = qualification_indexed.loc[family]
-        if family not in statistically_admitted:
+        if not bool(row["statistical_pass"]):
             decision = "REJECTED_STATISTICAL_GATE"
+        elif family not in statistically_admitted:
+            decision = "REJECTED_ADMISSION_RANK_OR_DIVERSIFICATION_CAP"
         elif family not in portfolio_admitted:
             decision = "REJECTED_STANDALONE_PORTFOLIO_GATE"
         else:
@@ -317,11 +337,15 @@ def main(source: Path, output: Path) -> None:
             "decision": decision,
         }
         if family in statistically_admitted:
-            evidence[family]["standalone_train_sharpe"] = float(
-                standalone_indexed.loc[family, "train_sharpe"]
-            )
-            evidence[family]["double_cost_train_sharpe"] = float(
+            train_sharpe = float(standalone_indexed.loc[family, "train_sharpe"])
+            doubled_sharpe = float(
                 standalone_indexed.loc[family, "double_cost_train_sharpe"]
+            )
+            evidence[family]["standalone_train_sharpe"] = (
+                train_sharpe if np.isfinite(train_sharpe) else None
+            )
+            evidence[family]["double_cost_train_sharpe"] = (
+                doubled_sharpe if np.isfinite(doubled_sharpe) else None
             )
 
     freeze = {

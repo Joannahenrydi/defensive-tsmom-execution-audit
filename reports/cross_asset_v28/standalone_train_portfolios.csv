@@ -1,0 +1,3 @@
+family,status,train_sharpe,train_cagr,train_max_drawdown,double_cost_train_sharpe,passed
+intraday_reversal,COMPLETED,-0.05314773889854356,-0.0006374279688933226,-0.045256742933398875,-0.07118848127295298,False
+volume_shock_reversal,COMPLETED,,0.0,0.0,,False
