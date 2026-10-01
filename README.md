@@ -1,6 +1,29 @@
 # Defensive TSMOM Research and Execution Audit
 
-## Current research status: v28 OHLCV alpha admission rejected
+## Current research status: v29 filing-date fundamentals blocked at the data gate
+
+v29 froze a new accounting-information study after v27 and v28 showed that independent price
+transformations still lacked enough economic edge. The collector preserves accession number,
+filing date and amendments as separate events, with each fact delayed one business day before it
+can affect a signal.
+
+The current host cannot access either the official SEC Company Facts endpoint or the official
+quarterly archive: both returned HTTP 403 Akamai responses. A public normalized mirror was audited
+instead. It mapped 500 of 503 candidate symbols and contained 3,346,388 fundamental values, but
+each value represented the latest filing for a company/metric/period and did not retain the
+fact-level `accession` or `filed` fields. Its separate filing table cannot identify which filing
+supplied each value, so amendments and later comparative restatements could leak backward.
+
+The mirror was rejected before alpha evaluation. This is `V29_BLOCKED_SEC_DATA_QUALITY`, not an
+alpha rejection; development was not read and orders remain disabled.
+
+- [Frozen v29 protocol](docs/EQUITY_RESEARCH_PROTOCOL_V29.md)
+- [v29 data-gate report](reports/equity_v29_data_gate/REPORT.md)
+- [v29 machine-readable gate](reports/equity_v29_data_gate/DATA_GATE.json)
+- [Official SEC collector](scripts/collect_sec_fundamentals_v29.py)
+- [Fallback-source audit](scripts/audit_sec_source_v29.py)
+
+## v28 OHLCV alpha admission: rejected
 
 v28 moved from close-to-close signals to three prespecified cross-asset OHLCV decompositions. All
 features used next-session execution, v26 risk-group residualization and causal rolling

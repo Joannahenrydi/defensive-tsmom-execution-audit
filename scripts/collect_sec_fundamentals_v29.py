@@ -214,8 +214,13 @@ def data_gate(mapping: pd.DataFrame, events: pd.DataFrame) -> tuple[dict, pd.Dat
         "sector_depth": int(sector_coverage["covered_symbols"].ge(10).sum()) >= 8,
         "unique_symbol_date": not events.duplicated(["symbol", "available_at"]).any(),
     }
+    status = (
+        "V29_DATA_ADMITTED_ALPHA_NOT_RUN"
+        if all(components.values())
+        else "V29_BLOCKED_SEC_DATA_QUALITY"
+    )
     summary = {
-        "status": "V29_DATA_ADMITTED_ALPHA_NOT_RUN" if all(components.values()) else "V29_BLOCKED_SEC_DATA_QUALITY",
+        "status": status,
         "components": components,
         "candidate_symbols": int(mapping["symbol"].nunique()),
         "uniquely_mapped_symbols": int(mapping["mapped"].sum()),

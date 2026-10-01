@@ -12,7 +12,8 @@ from backtest.cross_asset_budget import (
 def test_nonconverged_candidate_must_still_pass_independent_feasibility_check():
     bounds = Bounds(np.array([-1.0]), np.array([1.0]))
     linear = LinearConstraint(np.array([[1.0]]), -np.inf, np.array([0.5]))
-    volatility = lambda x: 0.25 - float(x @ x)
+    def volatility(x: np.ndarray) -> float:
+        return 0.25 - float(x @ x)
     numerical_boundary = OptimizeResult(x=np.array([0.50000002]), success=False, status=8)
     breached = OptimizeResult(x=np.array([0.51]), success=False, status=8)
     assert _is_feasible_candidate(numerical_boundary, bounds, linear, volatility, 1e-7)

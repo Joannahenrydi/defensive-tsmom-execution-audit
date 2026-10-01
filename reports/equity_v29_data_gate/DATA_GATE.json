@@ -1,0 +1,53 @@
+{
+  "status": "V29_BLOCKED_SEC_DATA_QUALITY",
+  "decision": "ALPHA_NOT_RUN",
+  "reason": "The official Company Facts endpoints returned HTTP 403 from the current host. The accessible normalized mirror keeps the latest value for each company/metric/period but omits the fact-level accession and filed date. Its separate filing table cannot identify which filing supplied each value, so later amendments or comparative restatements could be backfilled.",
+  "components": {
+    "official_company_facts_accessible": false,
+    "mapping_gate": true,
+    "mirror_base_schema": true,
+    "fact_level_vintage": false,
+    "point_in_time_reconstruction": false
+  },
+  "source_access": {
+    "attempted_on": "2026-10-01",
+    "company_facts_api": {
+      "url_pattern": "https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json",
+      "result": "HTTP 403 Akamai response from current host"
+    },
+    "official_quarterly_archive": {
+      "url_pattern": "https://www.sec.gov/files/dera/data/financial-statement-data-sets/YYYYqN.zip",
+      "result": "HTTP 403 Akamai response from current host"
+    }
+  },
+  "mapping": {
+    "candidate_symbols": 503,
+    "uniquely_mapped_symbols": 500,
+    "ambiguous_symbols": 0,
+    "mapping_gate_pass": true
+  },
+  "schema": {
+    "fundamental_schema_present": true,
+    "filing_schema_present": true,
+    "fact_rows_have_accession_and_filed": false,
+    "point_in_time_reconstruction_possible": false,
+    "missing_fact_vintage_columns": [
+      "accession",
+      "filed"
+    ]
+  },
+  "mirror": {
+    "provider": "SequelSEC",
+    "snapshot_date": "2026-09-18",
+    "license": "CC BY 4.0",
+    "fundamental_rows": 3346388,
+    "filing_rows": 184550,
+    "annual_filings": 45689,
+    "annual_filings_in_ambiguous_cik_report_date_keys": 2822,
+    "fundamentals_sha256": "2a0129f2adc4ca751b3fe9296e6298df75f4123cf7b5444cca24748978d2df61",
+    "filings_sha256": "d8ddd586db80db8eb5c10cc7e1e2f2687c2194abfc676c677a8118cd81b263a4",
+    "companies_sha256": "1b713697d7effcea82215cc94a0701b16551fac56b0c55356aca0d8abc305e39"
+  },
+  "candidates_sha256": "4822f1002808be0afcdc43d7f0672c836975c476ca67b697256c741eca405f8e",
+  "orders_allowed": false
+}
