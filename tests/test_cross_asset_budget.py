@@ -216,6 +216,37 @@ def test_dynamic_sleeve_caps_are_enforced_by_session():
     assert result.rebalances["maximum_sleeve_budget_ratio"].max() <= 1.0001
 
 
+def test_liquidity_limited_dynamic_sleeve_cut_is_executed_and_disclosed():
+    rng = np.random.default_rng(454)
+    index = pd.bdate_range("2018-01-02", periods=180)
+    columns = [f"A{i}" for i in range(12)]
+    returns = pd.DataFrame(rng.normal(0, .003, (180, 12)), index=index, columns=columns)
+    alpha = pd.DataFrame(.003, index=index, columns=columns)
+    adv = pd.DataFrame(3_000_000.0, index=index, columns=columns)
+    factors = pd.DataFrame({"factor": [1, -1] * 6}, index=columns)
+    sleeves = pd.Series(["left"] * 6 + ["right"] * 6, index=columns)
+    caps = pd.DataFrame({"left": .60, "right": .40}, index=index)
+    caps.loc[index[110]:, "left"] = .05
+    result = run_risk_budget_backtest(
+        alpha,
+        returns,
+        adv,
+        pd.DataFrame(True, index=index, columns=columns),
+        factors,
+        pd.Series({"factor": 1.0}),
+        sleeves,
+        caps,
+        config=RiskBudgetConfig(
+            covariance_window=60,
+            net_cap=1.0,
+            liquidity_limited_cap_reduction=True,
+        ),
+    )
+    assert result.status == "COMPLETED"
+    after_cut = result.rebalances.loc[index[110]:]
+    assert after_cut["maximum_sleeve_cap_excess"].max() > 0
+
+
 def test_name_scaler_validation_rejects_noncausal_ranges():
     index = pd.bdate_range("2018-01-02", periods=20)
     columns = [f"A{i}" for i in range(8)]

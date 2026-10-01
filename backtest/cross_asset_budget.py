@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import Bounds, LinearConstraint, OptimizeResult, minimize
+from scipy.optimize import Bounds, LinearConstraint, OptimizeResult, linprog, minimize
 
 from backtest.cross_asset import CrossAssetResult
 from portfolio.optimizer import PortfolioCosts, estimate_costs
@@ -237,9 +237,54 @@ def run_risk_budget_backtest(
                 lower_name[forced_short] = liquidity_ceiling[forced_short]
                 upper_name[forced_short] = liquidity_ceiling[forced_short]
             holding_bound = np.maximum(np.abs(lower_name), np.abs(upper_name))
+            desired_sleeve_caps = session_sleeve_caps.astype(float) * scale
+            effective_sleeve_caps = desired_sleeve_caps.copy()
+            effective_gross_cap = scaled_gross
+            effective_net_cap = config.net_cap * scale
+            effective_long_cap = scaled_long_cap
+            effective_short_cap = scaled_short_cap
+            if config.liquidity_limited_cap_reduction:
+                reachable_lower = np.maximum(lower_name, previous - capacity)
+                reachable_upper = np.minimum(upper_name, previous + capacity)
+                minimum_name_gross = np.where(
+                    reachable_lower > 0,
+                    reachable_lower,
+                    np.where(reachable_upper < 0, -reachable_upper, 0.0),
+                )
+                effective_gross_cap = max(
+                    scaled_gross, float(minimum_name_gross.sum() + fixed_gross)
+                )
+                minimum_net = float(reachable_lower.sum() + fixed_net)
+                maximum_net = float(reachable_upper.sum() + fixed_net)
+                minimum_absolute_net = (
+                    0.0
+                    if minimum_net <= 0 <= maximum_net
+                    else min(abs(minimum_net), abs(maximum_net))
+                )
+                effective_net_cap = max(effective_net_cap, minimum_absolute_net)
+                if effective_long_cap is not None:
+                    minimum_long = float(
+                        np.maximum(reachable_lower, 0).sum() + fixed_long_gross
+                    )
+                    effective_long_cap = max(float(effective_long_cap), minimum_long)
+                if effective_short_cap is not None:
+                    minimum_short = float(
+                        np.maximum(-reachable_upper, 0).sum() + fixed_short_gross
+                    )
+                    effective_short_cap = max(float(effective_short_cap), minimum_short)
+                for sleeve in session_sleeve_caps.index:
+                    mask = sleeves.eq(sleeve).to_numpy()
+                    minimum_tradable_gross = float(
+                        np.maximum(np.abs(previous[mask]) - capacity[mask], 0).sum()
+                        + fixed_sleeve_gross.get(sleeve, 0)
+                    )
+                    effective_sleeve_caps.loc[sleeve] = max(
+                        float(desired_sleeve_caps.loc[sleeve]), minimum_tradable_gross
+                    )
+            available_gross = effective_gross_cap - fixed_gross
             required_reduction = [max(0.0, np.abs(previous).sum() - max(available_gross, 0))]
             required_reduction.append(
-                max(0.0, abs(previous.sum() + fixed_net) - config.net_cap * scale)
+                max(0.0, abs(previous.sum() + fixed_net) - effective_net_cap)
             )
             required_reduction.append(float(np.maximum(np.abs(previous) - scaled_name, 0).sum()))
             if config.max_long_gross is not None:
@@ -247,25 +292,26 @@ def run_risk_budget_backtest(
                     np.maximum(previous, 0).sum() + fixed_long_gross
                 )
                 required_reduction.append(
-                    max(0.0, current_long_gross - float(scaled_long_cap))
+                    max(0.0, current_long_gross - float(effective_long_cap))
                 )
             if config.max_short_gross is not None:
                 current_short_gross = float(
                     np.abs(np.minimum(previous, 0)).sum() + fixed_short_gross
                 )
                 required_reduction.append(
-                    max(0.0, current_short_gross - float(scaled_short_cap))
+                    max(0.0, current_short_gross - float(effective_short_cap))
                 )
             for factor in factors.columns:
                 vector = factors[factor].to_numpy(dtype=float)
                 total_exposure = vector @ previous + float(fixed_factor_exposure[factor])
                 excess = max(0.0, abs(total_exposure) - float(factor_caps[factor]) * scale)
                 required_reduction.append(excess / max(float(np.abs(vector).max()), 1e-12))
-            for sleeve, cap in session_sleeve_caps.items():
+            for sleeve in session_sleeve_caps.index:
                 mask = sleeves.eq(sleeve).to_numpy()
                 required_reduction.append(
                     max(0.0, np.abs(previous[mask]).sum()
-                        + float(fixed_sleeve_gross.get(sleeve, 0)) - float(cap) * scale)
+                        + float(fixed_sleeve_gross.get(sleeve, 0))
+                        - float(effective_sleeve_caps.loc[sleeve]))
                 )
             # Per-name cap cuts can themselves create a new net/factor/sleeve breach. The
             # ordinary turnover cap must then be relaxed by both the forced trades and the
@@ -274,22 +320,22 @@ def run_risk_budget_backtest(
             cap_target = np.clip(previous, lower_name, upper_name)
             forced_turnover = float(np.abs(cap_target - previous).sum())
             post_cap_corrections = [
-                max(0.0, np.abs(cap_target).sum() + fixed_gross - scaled_gross),
-                max(0.0, abs(cap_target.sum() + fixed_net) - config.net_cap * scale),
+                max(0.0, np.abs(cap_target).sum() + fixed_gross - effective_gross_cap),
+                max(0.0, abs(cap_target.sum() + fixed_net) - effective_net_cap),
             ]
             if config.max_long_gross is not None:
                 post_cap_long = float(
                     np.maximum(cap_target, 0).sum() + fixed_long_gross
                 )
                 post_cap_corrections.append(
-                    max(0.0, post_cap_long - float(scaled_long_cap))
+                    max(0.0, post_cap_long - float(effective_long_cap))
                 )
             if config.max_short_gross is not None:
                 post_cap_short = float(
                     np.abs(np.minimum(cap_target, 0)).sum() + fixed_short_gross
                 )
                 post_cap_corrections.append(
-                    max(0.0, post_cap_short - float(scaled_short_cap))
+                    max(0.0, post_cap_short - float(effective_short_cap))
                 )
             for factor in factors.columns:
                 vector = factors[factor].to_numpy(dtype=float)
@@ -298,11 +344,12 @@ def run_risk_budget_backtest(
                 post_cap_corrections.append(
                     excess / max(float(np.abs(vector).max()), 1e-12)
                 )
-            for sleeve, cap in session_sleeve_caps.items():
+            for sleeve in session_sleeve_caps.index:
                 mask = sleeves.eq(sleeve).to_numpy()
                 post_cap_corrections.append(
                     max(0.0, np.abs(cap_target[mask]).sum()
-                        + float(fixed_sleeve_gross.get(sleeve, 0)) - float(cap) * scale)
+                        + float(fixed_sleeve_gross.get(sleeve, 0))
+                        - float(effective_sleeve_caps.loc[sleeve]))
                 )
             required_reduction.append(forced_turnover + max(post_cap_corrections))
             # A risk-cap cut overrides the ordinary turnover cap only by the minimum
@@ -311,18 +358,18 @@ def run_risk_budget_backtest(
             add(np.r_[np.zeros(n), np.ones(n), np.zeros(n)], available_gross)
             turnover_row = len(rows)
             add(np.r_[np.zeros(2 * n), np.ones(n)], turnover_limit)
-            add(np.r_[np.ones(n), np.zeros(2 * n)], config.net_cap * scale - fixed_net)
-            add(np.r_[-np.ones(n), np.zeros(2 * n)], config.net_cap * scale + fixed_net)
+            add(np.r_[np.ones(n), np.zeros(2 * n)], effective_net_cap - fixed_net)
+            add(np.r_[-np.ones(n), np.zeros(2 * n)], effective_net_cap + fixed_net)
             if config.max_long_gross is not None:
                 # For exact auxiliaries u=|w|, (u+w)/2 equals the long gross.
-                remaining_long = float(scaled_long_cap) - fixed_long_gross
+                remaining_long = float(effective_long_cap) - fixed_long_gross
                 add(
                     np.r_[0.5 * np.ones(n), 0.5 * np.ones(n), np.zeros(n)],
                     remaining_long,
                 )
             if config.max_short_gross is not None:
                 # For exact auxiliaries u=|w|, (u-w)/2 equals the short gross.
-                remaining_short = float(scaled_short_cap) - fixed_short_gross
+                remaining_short = float(effective_short_cap) - fixed_short_gross
                 add(
                     np.r_[-0.5 * np.ones(n), 0.5 * np.ones(n), np.zeros(n)],
                     remaining_short,
@@ -333,9 +380,11 @@ def run_risk_budget_backtest(
                 fixed_exposure = float(fixed_factor_exposure[factor])
                 add(np.r_[vector, np.zeros(2 * n)], cap - fixed_exposure)
                 add(np.r_[-vector, np.zeros(2 * n)], cap + fixed_exposure)
-            for sleeve, cap in session_sleeve_caps.items():
+            for sleeve in session_sleeve_caps.index:
                 mask = sleeves.eq(sleeve).to_numpy(dtype=float)
-                remaining = float(cap) * scale - float(fixed_sleeve_gross.get(sleeve, 0))
+                remaining = float(effective_sleeve_caps.loc[sleeve]) - float(
+                    fixed_sleeve_gross.get(sleeve, 0)
+                )
                 add(np.r_[np.zeros(n), mask, np.zeros(n)], remaining)
             linear_matrix = np.vstack(rows)
             linear_upper = np.asarray(upper)
@@ -359,7 +408,7 @@ def run_risk_budget_backtest(
             initial_weight = np.clip(previous, lower_name, upper_name)
             if config.max_long_gross is not None:
                 remaining_long = max(
-                    0.0, float(scaled_long_cap) - fixed_long_gross
+                    0.0, float(effective_long_cap) - fixed_long_gross
                 )
                 initial_long = float(np.maximum(initial_weight, 0).sum())
                 if initial_long > remaining_long and initial_long > 0:
@@ -367,7 +416,7 @@ def run_risk_budget_backtest(
                     initial_weight[positive] *= remaining_long / initial_long
             if config.max_short_gross is not None:
                 remaining_short = max(
-                    0.0, float(scaled_short_cap) - fixed_short_gross
+                    0.0, float(effective_short_cap) - fixed_short_gross
                 )
                 initial_short = float(np.abs(np.minimum(initial_weight, 0)).sum())
                 if initial_short > remaining_short and initial_short > 0:
@@ -385,9 +434,71 @@ def run_risk_budget_backtest(
                                       "jac": volatility_jac}],
                 options={"maxiter": config.max_iterations, "ftol": 1e-9, "disp": False},
             )
+            linear_fallback_reason = "NOT_RUN"
+            emergency_constraint_override = False
             independently_feasible = _is_feasible_candidate(
                 result, bounds, linear, volatility_constraint, config.tolerance
             )
+            if not result.success and not independently_feasible:
+                # HiGHS provides a deterministic feasibility/linear-objective fallback when
+                # SLSQP fails at a corner created by simultaneous liquidity, factor and dynamic
+                # sleeve cuts. Accept it only after the same independent volatility check.
+                linear_result = linprog(
+                    objective_vector,
+                    A_ub=linear_matrix,
+                    b_ub=linear_upper,
+                    bounds=list(zip(bounds.lb, bounds.ub, strict=True)),
+                    method="highs",
+                )
+                linear_fallback_reason = (
+                    f"{linear_result.status}_{linear_result.message}"
+                )
+                if linear_result.success:
+                    linear_candidate = OptimizeResult(
+                        x=linear_result.x,
+                        success=False,
+                        status=-4,
+                        message="independently verified HiGHS linear fallback",
+                    )
+                    if _is_feasible_candidate(
+                        linear_candidate,
+                        bounds,
+                        linear,
+                        volatility_constraint,
+                        config.tolerance,
+                    ):
+                        result = linear_candidate
+                        independently_feasible = True
+                    else:
+                        nonlinear_retry = minimize(
+                            objective,
+                            linear_result.x,
+                            jac=objective_jac,
+                            method="SLSQP",
+                            bounds=bounds,
+                            constraints=[
+                                linear,
+                                {
+                                    "type": "ineq",
+                                    "fun": volatility_constraint,
+                                    "jac": volatility_jac,
+                                },
+                            ],
+                            options={
+                                "maxiter": config.max_iterations,
+                                "ftol": 1e-9,
+                                "disp": False,
+                            },
+                        )
+                        if _is_feasible_candidate(
+                            nonlinear_retry,
+                            bounds,
+                            linear,
+                            volatility_constraint,
+                            config.tolerance,
+                        ):
+                            result = nonlinear_retry
+                            independently_feasible = True
             if not result.success and not independently_feasible:
                 hold_seed = OptimizeResult(
                     x=np.r_[previous, np.abs(previous), np.zeros(n)],
@@ -460,10 +571,36 @@ def run_risk_budget_backtest(
                     linear = emergency_linear
                     turnover_limit = emergency_turnover
                     independently_feasible = True
+            if (
+                not result.success
+                and not independently_feasible
+                and config.liquidity_limited_cap_reduction
+            ):
+                # If jointly tightened risk budgets are linearly infeasible under the ADV
+                # bounds, execute the maximum per-name liquidation that is actually tradable.
+                # Remaining risk-budget breaches are measured on the accepted target and fail
+                # the operational gate. This preserves an executable path without inventing
+                # liquidity or silently accepting an optimizer candidate.
+                liquidation_weight = np.sign(previous) * np.maximum(
+                    np.abs(previous) - capacity, 0.0
+                )
+                result = OptimizeResult(
+                    x=np.r_[
+                        liquidation_weight,
+                        np.abs(liquidation_weight),
+                        np.abs(liquidation_weight - previous),
+                    ],
+                    success=False,
+                    status=-5,
+                    message="maximum ADV-constrained emergency liquidation",
+                )
+                independently_feasible = True
+                emergency_constraint_override = True
             if not result.success and not independently_feasible:
                 return CrossAssetResult(pd.DataFrame(records).set_index("session"), pd.DataFrame(weights),
                                         pd.DataFrame(rebalances), "INVALID",
-                                        f"RISK_BUDGET_OPTIMIZER_FAILED_{result.status}_{result.message}")
+                                        f"RISK_BUDGET_OPTIMIZER_FAILED_{result.status}_"
+                                        f"{result.message}_LINEAR_{linear_fallback_reason}")
             target = active.copy()
             target.loc[names] = result.x[:n]
             trade = target - active
@@ -507,6 +644,7 @@ def run_risk_budget_backtest(
                                ),
                                "optimizer_converged": bool(result.success),
                                "optimizer_status": int(result.status),
+                               "emergency_constraint_override": emergency_constraint_override,
                                "risk_scaler": scale,
                                "long_gross_scaler": long_scale,
                                "short_gross_scaler": short_scale,
@@ -515,7 +653,10 @@ def run_risk_budget_backtest(
                                    (factor_exposure.abs() / (factor_caps * scale)).max()
                                ),
                                "maximum_sleeve_budget_ratio": float(
-                                   (sleeve_gross / (session_sleeve_caps * scale)).max()
+                                   (sleeve_gross / desired_sleeve_caps).max()
+                               ),
+                               "maximum_sleeve_cap_excess": float(
+                                   (sleeve_gross - desired_sleeve_caps).clip(lower=0).max()
                                ),
                                **{f"exposure_{key}": float(value) for key, value in factor_exposure.items()}})
         last_session = session
